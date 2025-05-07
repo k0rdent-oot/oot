@@ -8,9 +8,9 @@ workersNumber: 1 # @schema description: The number of the worker nodes; type: nu
 clusterIdentity: # @schema description: The KubeVirt Service Account credentials secret reference, auto-populated; type: object
   name: "" # @schema description: The KubeVirt Service Account credentials secret name, auto-populated; type: string
 
-cluster: # @schema description: Basic cluster information; type: object
-  name: "" # @schema description: The name of the cluster; type: string
-  namespace: "default" # @schema description: The namespace where cluster resources will be created; type: string
+cluster: {} # @schema description: Basic cluster information; type: object
+ # name: "" # @schema description: The name of the cluster; type: string
+ # namespace: "default" # @schema description: The namespace where cluster resources will be created; type: string
 
 clusterNetwork: # @schema description: The cluster network configuration; type: object
   pods: # @schema description: The network ranges from which Pod networks are allocated; type: object
