@@ -29,6 +29,10 @@ controlPlane: # @schema description: Control plane parameters; type: object
   memory: "4Gi" # @schema description: Memory allocated to control plane nodes; type: string
   bootstrapCheckStrategy: none # @schema description: Strategy for bootstrap checks; type: string; enum: [none, ssh]
   image: ghcr.io/k0rdent-oot/kubevirt-container-disk:debian-latest # @schema description: Container disk image for control plane nodes; type: string
+  additionalNetworkInterfaces: []
+  #  - name: bridge-net
+  #    multus:
+  #      networkName: bridge-1560
   preStartCommands: # @schema description: Commands to run before starting K0s service; type: array; items: string
     - apt update
     - env DEBIAN_FRONTEND=noninteractive apt -y install qemu-guest-agent
@@ -39,6 +43,10 @@ worker: # @schema description: Worker parameters; type: object
   memory: "4Gi" # @schema description: Memory allocated to worker nodes; type: string
   bootstrapCheckStrategy: none # @schema description: Strategy for bootstrap checks; type: string; enum: [none, ssh]
   image: ghcr.io/k0rdent-oot/kubevirt-container-disk:debian-latest # @schema description: Container disk image for worker nodes; type: string
+  additionalNetworkInterfaces: []
+  #  - name: bridge-net
+  #    multus:
+  #      networkName: bridge-1560
   preStartCommands: # @schema description: Commands to run before starting K0s service; type: array; items: string
     - apt update
     - env DEBIAN_FRONTEND=noninteractive apt -y install qemu-guest-agent

@@ -23,6 +23,10 @@ spec:
                   interfaces:
                   - name: default
                     bridge: {}
+                  {{- range .Values.worker.additionalNetworkInterfaces }}
+                  - name: {{ .name }}
+                    bridge: {}
+                  {{- end }}
                   disks:
                     - disk:
                         bus: virtio
@@ -34,6 +38,9 @@ spec:
               networks:
                 - name: default
                   pod: {}
+              {{- with .Values.worker.additionalNetworkInterfaces }}
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
               volumes:
                 - containerDisk:
                     image: {{ .Values.worker.image }}
