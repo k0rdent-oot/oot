@@ -106,7 +106,7 @@ metadata:
   name: kubevirt-demo
   namespace: kcm-system
 spec:
-  template: kubevirt-standalone-cp-0-3-0
+  template: kubevirt-standalone-cp-0-3-1
   credential: kubevirt-cluster-identity-cred
   config:
     controlPlaneNumber: 1
