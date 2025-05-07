@@ -33,6 +33,23 @@ controlPlane: # @schema description: Control plane parameters; type: object
   #  - name: bridge-net
   #    multus:
   #      networkName: bridge-1560
+  dataVolumes: []
+  #  - name: root
+  #    accessModes: ReadWriteMany
+  #    storage: 50Gi
+  #    volumeMode: Block
+  #    storageClassName: block-pool
+  #    source:
+  #      snapshot:
+  #        namespace: kcm-system
+  #        name: goldenimage-ubuntu2204
+  #  - name: data
+  #    accessModes: ReadWriteMany
+  #    storage: 1Gi
+  #    volumeMode: Block
+  #    storageClassName: block-pool
+  #    source:
+  #      blank: {}
   preStartCommands: # @schema description: Commands to run before starting K0s service; type: array; items: string
     - apt update
     - env DEBIAN_FRONTEND=noninteractive apt -y install qemu-guest-agent
@@ -47,6 +64,23 @@ worker: # @schema description: Worker parameters; type: object
   #  - name: bridge-net
   #    multus:
   #      networkName: bridge-1560
+  dataVolumes: []
+  #  - name: root
+  #    accessModes: ReadWriteMany
+  #    storage: 50Gi
+  #    volumeMode: Block
+  #    storageClassName: block-pool
+  #    source:
+  #      snapshot:
+  #        namespace: kcm-system
+  #        name: goldenimage-ubuntu2204
+  #  - name: data
+  #    accessModes: ReadWriteMany
+  #    storage: 1Gi
+  #    volumeMode: Block
+  #    storageClassName: block-pool
+  #    source:
+  #      blank: {}
   preStartCommands: # @schema description: Commands to run before starting K0s service; type: array; items: string
     - apt update
     - env DEBIAN_FRONTEND=noninteractive apt -y install qemu-guest-agent

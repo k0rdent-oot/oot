@@ -28,9 +28,17 @@ spec:
                     bridge: {}
                   {{- end }}
                   disks:
+                  {{- if .Values.worker.dataVolumes }}
+                  {{- range .Values.worker.dataVolumes }}
+                    - disk:
+                        bus: virtio
+                      name: {{ .name }}
+                  {{- end }}
+                  {{- else }}
                     - disk:
                         bus: virtio
                       name: containervolume
+                  {{- end }}
                   networkInterfaceMultiqueue: true
                 memory:
                   guest: {{ .Values.worker.memory }}
@@ -42,6 +50,37 @@ spec:
                 {{- toYaml . | nindent 16 }}
               {{- end }}
               volumes:
-                - containerDisk:
+                {{- if .Values.worker.dataVolumes }}
+                {{- range .Values.worker.dataVolumes }}
+                - name: {{ .name }}
+                  dataVolume:
+                    name: {{ .name }}
+                {{- end }}
+                {{- else }}
+                - name: containervolume
+                  containerDisk:
                     image: {{ .Values.worker.image }}
-                  name: containervolume
+                {{- end }}
+          {{- if .Values.worker.dataVolumes }}
+          dataVolumeTemplates:
+          {{- range .Values.worker.dataVolumes }}
+          - apiVersion: cdi.kubevirt.io/v1beta1
+            kind: DataVolume
+            metadata:
+              name: {{ .name }}
+              annotations:
+                # https://github.com/kubevirt/containerized-data-importer/blob/main/doc/waitforfirstconsumer-storage-handling.md
+                cdi.kubevirt.io/storage.bind.immediate.requested: ""
+            spec:
+              pvc:
+                accessModes:
+                - {{ .accessModes }}
+                resources:
+                  requests:
+                    storage: {{ .storage }}
+                volumeMode: {{ .volumeMode }}
+                storageClassName: {{ .storageClassName }}
+              source:
+                {{- toYaml .source | nindent 16 }}
+          {{- end }}
+          {{- end }}
