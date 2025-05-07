@@ -70,3 +70,7 @@ cloudControllerManager:
 #        topologyKey: topology.kubernetes.io/zone
 #        maxSkew: 1
 #        whenUnsatisfiable: DoNotSchedule
+
+machineHealthCheck:
+  enabled: false
+  maxUnhealthy: 40%
