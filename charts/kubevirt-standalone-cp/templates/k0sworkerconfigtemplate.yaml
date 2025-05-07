@@ -7,6 +7,9 @@ spec:
   template:
     spec:
       version: {{ .Values.k0s.version }}
+      args:
+      - --enable-cloud-provider
+      - --kubelet-extra-args="--cloud-provider=external"
       preStartCommands:
       {{- with .Values.worker.preStartCommands }}
         {{- toYaml . | nindent 8 }}

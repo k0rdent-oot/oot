@@ -55,3 +55,18 @@ k0s: # @schema description: K0s parameters; type: object
     repository: "" # @schema description: Container image repository to use; type: string
   telemetry: # @schema description: Telemetry configuration; type: object
     enabled: false # @schema description: Whether to enable telemetry; type: boolean
+
+cloudControllerManager:
+  replicas: 1
+  repo: quay.io/kubevirt
+  name: kubevirt-cloud-controller-manager
+  tag: v0.5.1
+  topologySpreadConstraints: []
+#    - labelSelector:
+#        matchLabels:
+#          k8s-app: kubevirt-cloud-controller-manager-{{ .Release.Name }}
+#        matchLabelKeys:
+#          - pod-template-hash
+#        topologyKey: topology.kubernetes.io/zone
+#        maxSkew: 1
+#        whenUnsatisfiable: DoNotSchedule
