@@ -12,7 +12,7 @@ spec:
         metadata:
           namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
         spec:
-          runStrategy: Always
+          runStrategy: {{ .Values.worker.runStrategy }}
           template:
             spec:
               # https://doc.crds.dev/github.com/kubernetes-sigs/cluster-api-provider-kubevirt/infrastructure.cluster.x-k8s.io/KubevirtMachineTemplate/v1alpha1@v0.1.9#spec-template-spec-virtualMachineTemplate-spec-template

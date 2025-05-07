@@ -25,6 +25,7 @@ clusterAnnotations: {} # @schema description: Annotations to apply to the cluste
 
 # KubeVirt machines parameters
 controlPlane: # @schema description: Control plane parameters; type: object
+  runStrategy: Always
   cpus: 2 # @schema description: Number of CPUs allocated to control plane nodes; type: integer; minimum: 1
   memory: "4Gi" # @schema description: Memory allocated to control plane nodes; type: string
   bootstrapCheckStrategy: none # @schema description: Strategy for bootstrap checks; type: string; enum: [none, ssh]
@@ -56,6 +57,7 @@ controlPlane: # @schema description: Control plane parameters; type: object
     - systemctl enable --now qemu-guest-agent
 
 worker: # @schema description: Worker parameters; type: object
+  runStrategy: Always
   cpus: 2 # @schema description: Number of CPUs allocated to worker nodes; type: integer; minimum: 1
   memory: "4Gi" # @schema description: Memory allocated to worker nodes; type: string
   bootstrapCheckStrategy: none # @schema description: Strategy for bootstrap checks; type: string; enum: [none, ssh]
