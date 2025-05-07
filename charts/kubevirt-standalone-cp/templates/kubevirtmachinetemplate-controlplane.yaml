@@ -20,6 +20,9 @@ spec:
                 cpu:
                   cores: {{ .Values.controlPlane.cpus }}
                 devices:
+                  interfaces:
+                  - name: default
+                    bridge: {}
                   disks:
                     - disk:
                         bus: virtio
@@ -28,6 +31,9 @@ spec:
                 memory:
                   guest: {{ .Values.controlPlane.memory }}
               evictionStrategy: External
+              networks:
+                - name: default
+                  pod: {}
               volumes:
                 - containerDisk:
                     image: {{ .Values.controlPlane.image }}
