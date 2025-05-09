@@ -14,3 +14,7 @@ spec:
       {{- with .Values.worker.preStartCommands }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      files:
+      {{- if .Values.worker.files }}
+        {{- toYaml .Values.worker.files | nindent 8 }}
+      {{- end }}

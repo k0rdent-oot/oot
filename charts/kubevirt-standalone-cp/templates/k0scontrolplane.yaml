@@ -16,6 +16,10 @@ spec:
       - --enable-cloud-provider
       - --kubelet-extra-args="--cloud-provider=external"
       - --disable-components=konnectivity-server
+    files:
+    {{- if .Values.controlPlane.files }}
+      {{- toYaml .Values.controlPlane.files | nindent 6 }}
+    {{- end }}
     k0s:
       apiVersion: k0s.k0sproject.io/v1beta1
       kind: ClusterConfig
