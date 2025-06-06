@@ -4,7 +4,7 @@ description: |
   A KCM template to deploy a k0s cluster on KubeVirt with bootstrapped control plane nodes.
 type: application
 version: 0.3.3
-appVersion: "v1.31.8+k0s.0"
+appVersion: "v1.31.9+k0s.0"
 annotations:
   cluster.x-k8s.io/provider: infrastructure-kubevirt, control-plane-k0sproject-k0smotron, bootstrap-k0sproject-k0smotron
   k0rdent.mirantis.com/type: deployment
