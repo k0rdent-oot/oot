@@ -1,0 +1,180 @@
+{{- if .Values.kubevirtCsiDriver.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: kubevirt-csi-driver-{{ .Release.Name }}
+  name: kubevirt-csi-controller-{{ .Release.Name }}
+  namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
+spec:
+  replicas: {{ .Values.kubevirtCsiDriver.replicas }}
+  selector:
+    matchLabels:
+      app: kubevirt-csi-driver-{{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: kubevirt-csi-driver-{{ .Release.Name }}
+    spec:
+      containers:
+      - args:
+        - --endpoint=$(CSI_ENDPOINT)
+        - --infra-cluster-namespace=$(INFRACLUSTER_NAMESPACE)
+        - --infra-cluster-labels=$(INFRACLUSTER_LABELS)
+        - --tenant-cluster-kubeconfig=/var/run/secrets/tenantcluster/value
+        - --run-node-service=false
+        - --run-controller-service=true
+        - --v=5
+        env:
+        - name: CSI_ENDPOINT
+          value: unix:///var/lib/csi/sockets/pluginproxy/csi.sock
+        - name: KUBE_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: INFRACLUSTER_NAMESPACE
+          valueFrom:
+            configMapKeyRef:
+              key: infraClusterNamespace
+              name: driver-config-{{ .Release.Name }}
+        - name: INFRACLUSTER_LABELS
+          valueFrom:
+            configMapKeyRef:
+              key: infraClusterLabels
+              name: driver-config-{{ .Release.Name }}
+        - name: INFRA_STORAGE_CLASS_ENFORCEMENT
+          valueFrom:
+            configMapKeyRef:
+              key: infraStorageClassEnforcement
+              name: driver-config-{{ .Release.Name }}
+              optional: true
+        image: {{ .Values.kubevirtCsiDriver.csiDriver.repo }}/{{ .Values.kubevirtCsiDriver.csiDriver.name }}:{{ .Values.kubevirtCsiDriver.csiDriver.tag }}
+        imagePullPolicy: Always
+        name: csi-driver
+        ports:
+        - containerPort: 10301
+          name: healthz
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 10m
+            memory: 50Mi
+        volumeMounts:
+        - mountPath: /var/lib/csi/sockets/pluginproxy/
+          name: socket-dir
+        - mountPath: /var/run/secrets/tenantcluster
+          name: tenantcluster
+      - args:
+        - --csi-address=$(ADDRESS)
+        - --default-fstype=ext4
+        - --kubeconfig=/var/run/secrets/tenantcluster/value
+        - --v=5
+        - --timeout=3m
+        - --retry-interval-max=1m
+        env:
+        - name: ADDRESS
+          value: /var/lib/csi/sockets/pluginproxy/csi.sock
+        image: {{ .Values.kubevirtCsiDriver.csiProvisioner.repo }}/{{ .Values.kubevirtCsiDriver.csiProvisioner.name }}:{{ .Values.kubevirtCsiDriver.csiProvisioner.tag }}
+        name: csi-provisioner
+        volumeMounts:
+        - mountPath: /var/lib/csi/sockets/pluginproxy/
+          name: socket-dir
+        - mountPath: /var/run/secrets/tenantcluster
+          name: tenantcluster
+      - args:
+        - --csi-address=$(ADDRESS)
+        - --kubeconfig=/var/run/secrets/tenantcluster/value
+        - --v=5
+        - --timeout=3m
+        - --retry-interval-max=1m
+        env:
+        - name: ADDRESS
+          value: /var/lib/csi/sockets/pluginproxy/csi.sock
+        image: {{ .Values.kubevirtCsiDriver.csiAttacher.repo }}/{{ .Values.kubevirtCsiDriver.csiAttacher.name }}:{{ .Values.kubevirtCsiDriver.csiAttacher.tag }}
+        name: csi-attacher
+        resources:
+          requests:
+            cpu: 10m
+            memory: 50Mi
+        volumeMounts:
+        - mountPath: /var/lib/csi/sockets/pluginproxy/
+          name: socket-dir
+        - mountPath: /var/run/secrets/tenantcluster
+          name: tenantcluster
+      - args:
+        - --csi-address=/csi/csi.sock
+        - --probe-timeout=3s
+        - --health-port=10301
+        image: {{ .Values.kubevirtCsiDriver.csiLivenessProbe.repo }}/{{ .Values.kubevirtCsiDriver.csiLivenessProbe.name }}:{{ .Values.kubevirtCsiDriver.csiLivenessProbe.tag }}
+        name: csi-liveness-probe
+        resources:
+          requests:
+            cpu: 10m
+            memory: 50Mi
+        volumeMounts:
+        - mountPath: /csi
+          name: socket-dir
+        - mountPath: /var/run/secrets/tenantcluster
+          name: tenantcluster
+      - args:
+        - --v=5
+        - --csi-address=/csi/csi.sock
+        - --kubeconfig=/var/run/secrets/tenantcluster/value
+        - --timeout=3m
+        image: {{ .Values.kubevirtCsiDriver.csiSnapshotter.repo }}/{{ .Values.kubevirtCsiDriver.csiSnapshotter.name }}:{{ .Values.kubevirtCsiDriver.csiSnapshotter.tag }}
+        imagePullPolicy: IfNotPresent
+        name: csi-snapshotter
+        resources:
+          requests:
+            cpu: 10m
+            memory: 20Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /csi
+          name: socket-dir
+        - mountPath: /var/run/secrets/tenantcluster
+          name: tenantcluster
+      - args:
+        - -csi-address=/csi/csi.sock
+        - -kubeconfig=/var/run/secrets/tenantcluster/value
+        - -v=5
+        - -timeout=3m
+        - -handle-volume-inuse-error=false
+        image: {{ .Values.kubevirtCsiDriver.csiResizer.repo }}/{{ .Values.kubevirtCsiDriver.csiResizer.name }}:{{ .Values.kubevirtCsiDriver.csiResizer.tag }}
+        name: csi-resizer
+        resources:
+          requests:
+            cpu: 10m
+            memory: 20Mi
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - mountPath: /csi
+          name: socket-dir
+        - mountPath: /var/run/secrets/tenantcluster
+          name: tenantcluster
+      enableServiceLinks: false
+      {{- if .Values.kubevirtCsiDriver.nodeSelector }}
+      nodeSelector: {{ toYaml .Values.kubevirtCsiDriver.nodeSelector | nindent 8 }}
+      {{- end }}
+      priorityClassName: system-cluster-critical
+      serviceAccount: kubevirt-csi-{{ .Release.Name }}
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Exists
+      {{- if .Values.kubevirtCsiDriver.topologySpreadConstraints }}
+      topologySpreadConstraints: {{ tpl (toYaml .Values.kubevirtCsiDriver.topologySpreadConstraints) $ | nindent 6 }}
+      {{- end }}
+      volumes:
+      - emptyDir: {}
+        name: socket-dir
+      - name: tenantcluster
+        secret:
+          secretName: {{ .Release.Name }}-kubeconfig
+{{- end }}

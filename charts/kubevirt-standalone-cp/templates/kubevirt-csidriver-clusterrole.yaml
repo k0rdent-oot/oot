@@ -1,0 +1,10 @@
+{{- if .Values.kubevirtCsiDriver.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubevirt-csi-cluster-{{ .Release.Name }}
+rules:
+- apiGroups: [""]
+  resources: ["persistentvolumes"]
+  verbs: ["get"]
+{{- end }}

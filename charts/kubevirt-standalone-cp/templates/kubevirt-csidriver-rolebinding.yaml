@@ -1,0 +1,14 @@
+{{- if .Values.kubevirtCsiDriver.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kubevirt-csi-{{ .Release.Name }}
+  namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kubevirt-csi-{{ .Release.Name }}
+subjects:
+- kind: ServiceAccount
+  name: kubevirt-csi-{{ .Release.Name }}
+{{- end }}

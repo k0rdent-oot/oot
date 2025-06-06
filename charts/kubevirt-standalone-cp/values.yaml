@@ -129,6 +129,45 @@ cloudControllerManager:
 #        maxSkew: 1
 #        whenUnsatisfiable: DoNotSchedule
 
+kubevirtCsiDriver:
+  enabled: false
+  replicas: 1
+  csiDriver:
+    repo: quay.io/kubevirt
+    name: kubevirt-csi-driver
+    tag: latest
+  csiProvisioner:
+    repo: quay.io/openshift
+    name: origin-csi-external-provisioner
+    tag: latest
+  csiAttacher:
+    repo: quay.io/openshift
+    name: origin-csi-external-attacher
+    tag: latest
+  csiLivenessProbe:
+    repo: quay.io/openshift
+    name: origin-csi-livenessprobe
+    tag: latest
+  csiSnapshotter:
+    repo: k8s.gcr.io/sig-storage
+    name: csi-snapshotter
+    tag: v4.2.1
+  csiResizer:
+    repo: registry.k8s.io/sig-storage
+    name: csi-resizer
+    tag: v1.13.1
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: "true"
+  topologySpreadConstraints: []
+#    - labelSelector:
+#        matchLabels:
+#          k8s-app: kubevirt-csi-driver-{{ .Release.Name }}
+#        matchLabelKeys:
+#          - pod-template-hash
+#        topologyKey: topology.kubernetes.io/zone
+#        maxSkew: 1
+#        whenUnsatisfiable: DoNotSchedule
+
 machineHealthCheck:
   enabled: false
   maxUnhealthy: 40%

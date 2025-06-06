@@ -1,0 +1,10 @@
+{{- if .Values.kubevirtCsiDriver.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: driver-config-{{ .Release.Name }}
+  namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
+data:
+  infraClusterNamespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
+  infraClusterLabels: csi-driver/cluster={{ .Release.Name }}
+{{- end }}

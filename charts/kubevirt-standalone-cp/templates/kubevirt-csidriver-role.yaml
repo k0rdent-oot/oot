@@ -1,0 +1,26 @@
+{{- if .Values.kubevirtCsiDriver.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kubevirt-csi-{{ .Release.Name }}
+  namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
+rules:
+- apiGroups: ["cdi.kubevirt.io"]
+  resources: ["datavolumes"]
+  verbs: ["get", "create", "delete"]
+- apiGroups: ["kubevirt.io"]
+  resources: ["virtualmachineinstances", "virtualmachines"]
+  verbs: ["list", "get"]
+- apiGroups: ["subresources.kubevirt.io"]
+  resources: ["virtualmachines/addvolume", "virtualmachines/removevolume"]
+  verbs: ["update"]
+- apiGroups: ["subresources.kubevirt.io"]
+  resources: ["virtualmachineinstances/addvolume", "virtualmachineinstances/removevolume"]
+  verbs: ["update"]
+- apiGroups: ["snapshot.storage.k8s.io"]
+  resources: ["volumesnapshots"]
+  verbs: ["get", "create", "delete"]
+- apiGroups: [""]
+  resources: ["persistentvolumeclaims"]
+  verbs: ["get", "patch"]
+{{- end }}
