@@ -2,5 +2,10 @@ apiVersion: v2
 name: kubevirt-pp
 description: A KubeVirt Pluggable provider Helm chart
 type: application
-version: 0.3.2
-appVersion: "0.1.9"
+version: 1.0.0
+appVersion: 1.0.0
+dependencies:
+  - name: kubevirt
+    version: ">=0.3.0"
+    repository: "oci://ghcr.io/k0rdent-oot/oot/charts"
+    condition: kubevirt.enabled

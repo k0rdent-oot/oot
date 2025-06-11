@@ -1,2 +1,10 @@
+kubevirt:
+  enabled: true
+  namespace: kubevirt
+  configuration:
+    developerConfiguration:
+      featureGates:
+        - useEmulation=true
+
 config: # @schema description: Configuration settings; type: object
   namespace: "" # @schema description: Namespace for objects; type: string
