@@ -64,7 +64,7 @@ controlPlane: # @schema description: Control plane parameters; type: object
     - systemctl enable --now qemu-guest-agent
 
 worker: # @schema description: Worker parameters; type: object
-  runStrategy: Always
+  runStrategy: Once
   cpus: 2 # @schema description: Number of CPUs allocated to worker nodes; type: integer; minimum: 1
   memory: "4Gi" # @schema description: Memory allocated to worker nodes; type: string
   bootstrapCheckStrategy: none # @schema description: Strategy for bootstrap checks; type: string; enum: [none, ssh]
@@ -109,64 +109,60 @@ k0s: # @schema description: K0s parameters; type: object
     extraArgs: {} # @schema description: Map of key-values (strings) for any extra arguments to pass down to Kubernetes api-server process; type: object; additionalProperties: true
   network: # @schema description: Network configuration for K0s; type: object
     vxlanPort: 6789 # @schema description: Port to use for VXLAN tunnels; type: number; minimum: 1; maximum: 65535
-  images: # @schema description: Container image configuration; type: object
-    repository: "" # @schema description: Container image repository to use; type: string
-  telemetry: # @schema description: Telemetry configuration; type: object
-    enabled: false # @schema description: Whether to enable telemetry; type: boolean
 
 cloudControllerManager:
   replicas: 1
   repo: quay.io/kubevirt
   name: kubevirt-cloud-controller-manager
   tag: v0.5.1
-  topologySpreadConstraints: []
-#    - labelSelector:
-#        matchLabels:
-#          k8s-app: kubevirt-cloud-controller-manager-{{ .Release.Name }}
-#        matchLabelKeys:
-#          - pod-template-hash
-#        topologyKey: topology.kubernetes.io/zone
-#        maxSkew: 1
-#        whenUnsatisfiable: DoNotSchedule
+  topologySpreadConstraints:
+    - labelSelector:
+        matchLabels:
+          k8s-app: kubevirt-cloud-controller-manager-{{ .Release.Name }}
+      matchLabelKeys:
+        - pod-template-hash
+      topologyKey: topology.kubernetes.io/zone
+      maxSkew: 1
+      whenUnsatisfiable: ScheduleAnyway
 
 kubevirtCsiDriver:
-  enabled: false
   replicas: 1
+  infraStorageClassName: "standard" # change with storage class of Mothership
   csiDriver:
     repo: quay.io/kubevirt
     name: kubevirt-csi-driver
     tag: latest
   csiProvisioner:
-    repo: quay.io/openshift
-    name: origin-csi-external-provisioner
-    tag: latest
+    repo: k8s.gcr.io/sig-storage
+    name: csi-provisioner
+    tag: v5.1.0
   csiAttacher:
-    repo: quay.io/openshift
-    name: origin-csi-external-attacher
-    tag: latest
+    repo: k8s.gcr.io/sig-storage
+    name: csi-attacher
+    tag: v4.4.3
   csiLivenessProbe:
-    repo: quay.io/openshift
-    name: origin-csi-livenessprobe
-    tag: latest
+    repo: k8s.gcr.io/sig-storage
+    name: livenessprobe
+    tag: v2.12.0
   csiSnapshotter:
     repo: k8s.gcr.io/sig-storage
     name: csi-snapshotter
-    tag: v4.2.1
+    tag: v7.0.2
   csiResizer:
-    repo: registry.k8s.io/sig-storage
+    repo: k8s.gcr.io/sig-storage
     name: csi-resizer
     tag: v1.13.1
   nodeSelector:
     node-role.kubernetes.io/control-plane: "true"
-  topologySpreadConstraints: []
-#    - labelSelector:
-#        matchLabels:
-#          k8s-app: kubevirt-csi-driver-{{ .Release.Name }}
-#        matchLabelKeys:
-#          - pod-template-hash
-#        topologyKey: topology.kubernetes.io/zone
-#        maxSkew: 1
-#        whenUnsatisfiable: DoNotSchedule
+  topologySpreadConstraints:
+    - labelSelector:
+        matchLabels:
+          k8s-app: kubevirt-csi-driver-{{ .Release.Name }}
+      matchLabelKeys:
+        - pod-template-hash
+      topologyKey: topology.kubernetes.io/zone
+      maxSkew: 1
+      whenUnsatisfiable: ScheduleAnyway
 
 machineHealthCheck:
   enabled: false

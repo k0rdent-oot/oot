@@ -2,7 +2,7 @@
 apiVersion: k0rdent.mirantis.com/v1beta1
 kind: ClusterTemplate
 metadata:
-  name: kubevirt-standalone-cp-0-3-4
+  name: kubevirt-standalone-cp-1-0-0
   namespace: {{ .Values.config.namespace | default .Release.Namespace | trunc 63 }}
   annotations:
     helm.sh/resource-policy: keep
@@ -10,7 +10,7 @@ spec:
   helm:
     chartSpec:
       chart: kubevirt-standalone-cp
-      version: 0.3.4
+      version: 1.0.0
       interval: 10m0s
       sourceRef:
         kind: HelmRepository

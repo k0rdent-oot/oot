@@ -1,3 +1,4 @@
+{{- $global := .Values.global | default dict }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -24,8 +25,12 @@ spec:
         - --cluster-name={{ .Release.Name }}
         command:
         - /bin/kubevirt-cloud-controller-manager
+        {{- if $global.registry }}
+        image: {{ $global.registry }}/{{ .Values.cloudControllerManager.name }}:{{ .Values.cloudControllerManager.tag }}
+        {{- else }}
         image: {{ .Values.cloudControllerManager.repo }}/{{ .Values.cloudControllerManager.name }}:{{ .Values.cloudControllerManager.tag }}
-        imagePullPolicy: Always
+        {{- end }}
+        imagePullPolicy: IfNotPresent
         name: kubevirt-cloud-controller-manager
         resources:
           requests:

@@ -1,4 +1,4 @@
-{{- if .Values.kubevirtCsiDriver.enabled }}
+{{- $global := .Values.global | default dict }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -48,7 +48,11 @@ spec:
               key: infraStorageClassEnforcement
               name: driver-config-{{ .Release.Name }}
               optional: true
+        {{- if $global.registry }}
+        image: {{ $global.registry }}/kubevirt/{{ .Values.kubevirtCsiDriver.csiDriver.name }}:{{ .Values.kubevirtCsiDriver.csiDriver.tag }}
+        {{- else }}
         image: {{ .Values.kubevirtCsiDriver.csiDriver.repo }}/{{ .Values.kubevirtCsiDriver.csiDriver.name }}:{{ .Values.kubevirtCsiDriver.csiDriver.tag }}
+        {{- end }}
         imagePullPolicy: Always
         name: csi-driver
         ports:
@@ -74,7 +78,11 @@ spec:
         env:
         - name: ADDRESS
           value: /var/lib/csi/sockets/pluginproxy/csi.sock
+        {{- if $global.registry }}
+        image: {{ $global.registry }}/sig-storage/{{ .Values.kubevirtCsiDriver.csiProvisioner.name }}:{{ .Values.kubevirtCsiDriver.csiProvisioner.tag }}
+        {{- else }}
         image: {{ .Values.kubevirtCsiDriver.csiProvisioner.repo }}/{{ .Values.kubevirtCsiDriver.csiProvisioner.name }}:{{ .Values.kubevirtCsiDriver.csiProvisioner.tag }}
+        {{- end }}
         name: csi-provisioner
         volumeMounts:
         - mountPath: /var/lib/csi/sockets/pluginproxy/
@@ -90,7 +98,11 @@ spec:
         env:
         - name: ADDRESS
           value: /var/lib/csi/sockets/pluginproxy/csi.sock
+        {{- if $global.registry }}
+        image: {{ $global.registry }}/sig-storage/{{ .Values.kubevirtCsiDriver.csiAttacher.name }}:{{ .Values.kubevirtCsiDriver.csiAttacher.tag }}
+        {{- else }}
         image: {{ .Values.kubevirtCsiDriver.csiAttacher.repo }}/{{ .Values.kubevirtCsiDriver.csiAttacher.name }}:{{ .Values.kubevirtCsiDriver.csiAttacher.tag }}
+        {{- end }}
         name: csi-attacher
         resources:
           requests:
@@ -105,7 +117,11 @@ spec:
         - --csi-address=/csi/csi.sock
         - --probe-timeout=3s
         - --health-port=10301
+        {{- if $global.registry }}
+        image: {{ $global.registry }}/sig-storage/{{ .Values.kubevirtCsiDriver.csiLivenessProbe.name }}:{{ .Values.kubevirtCsiDriver.csiLivenessProbe.tag }}
+        {{- else }}
         image: {{ .Values.kubevirtCsiDriver.csiLivenessProbe.repo }}/{{ .Values.kubevirtCsiDriver.csiLivenessProbe.name }}:{{ .Values.kubevirtCsiDriver.csiLivenessProbe.tag }}
+        {{- end }}
         name: csi-liveness-probe
         resources:
           requests:
@@ -121,7 +137,11 @@ spec:
         - --csi-address=/csi/csi.sock
         - --kubeconfig=/var/run/secrets/tenantcluster/value
         - --timeout=3m
+        {{- if $global.registry }}
+        image: {{ $global.registry }}/sig-storage/{{ .Values.kubevirtCsiDriver.csiSnapshotter.name }}:{{ .Values.kubevirtCsiDriver.csiSnapshotter.tag }}
+        {{- else }}
         image: {{ .Values.kubevirtCsiDriver.csiSnapshotter.repo }}/{{ .Values.kubevirtCsiDriver.csiSnapshotter.name }}:{{ .Values.kubevirtCsiDriver.csiSnapshotter.tag }}
+        {{- end }}
         imagePullPolicy: IfNotPresent
         name: csi-snapshotter
         resources:
@@ -141,7 +161,11 @@ spec:
         - -v=5
         - -timeout=3m
         - -handle-volume-inuse-error=false
+        {{- if $global.registry }}
+        image: {{ $global.registry }}/sig-storage/{{ .Values.kubevirtCsiDriver.csiResizer.name }}:{{ .Values.kubevirtCsiDriver.csiResizer.tag }}
+        {{- else }}
         image: {{ .Values.kubevirtCsiDriver.csiResizer.repo }}/{{ .Values.kubevirtCsiDriver.csiResizer.name }}:{{ .Values.kubevirtCsiDriver.csiResizer.tag }}
+        {{- end }}
         name: csi-resizer
         resources:
           requests:
@@ -177,4 +201,3 @@ spec:
       - name: tenantcluster
         secret:
           secretName: {{ .Release.Name }}-kubeconfig
-{{- end }}

@@ -1,4 +1,3 @@
-{{- if .Values.kubevirtCsiDriver.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -7,4 +6,3 @@ metadata:
 data:
   infraClusterNamespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
   infraClusterLabels: csi-driver/cluster={{ .Release.Name }}
-{{- end }}

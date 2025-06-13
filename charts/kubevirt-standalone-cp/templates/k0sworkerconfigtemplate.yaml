@@ -12,13 +12,29 @@ spec:
       {{- end }}
       version: {{ .Values.k0s.version }}
       args:
-      - --enable-cloud-provider
-      - --kubelet-extra-args="--cloud-provider=external"
+        - --enable-cloud-provider
+        - --kubelet-extra-args="--cloud-provider=external"
+      files:
+      {{- if .Values.worker.files }}
+        {{- toYaml .Values.worker.files | nindent 8 }}
+      {{- end }}
+      {{- if or $global.registryCertSecret $global.k0sURLCertSecret }}
+      {{- $certs := dict "registry.crt" $global.registryCertSecret "k0s-url.crt" $global.k0sURLCertSecret }}
+        {{- range $path, $secret := $certs }}
+        {{- if $secret }}
+        - contentFrom:
+            secretRef:
+              name: {{ $secret }}
+              key: tls.crt
+          permissions: "0664"
+          path: /usr/local/share/ca-certificates/{{ $path }}
+        {{- end }}
+        {{- end }}
+      {{- end }}
       preStartCommands:
       {{- with .Values.worker.preStartCommands }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      files:
-      {{- if .Values.worker.files }}
-        {{- toYaml .Values.worker.files | nindent 8 }}
+      {{- if or $global.registryCertSecret $global.k0sURLCertSecret }}
+        - sudo update-ca-certificates
       {{- end }}

@@ -37,7 +37,7 @@ kubectl patch mgmt kcm \
       "path": "/spec/providers/-",
       "value": {
         "name": "cluster-api-provider-kubevirt",
-        "template": "cluster-api-provider-kubevirt-0-3-0",
+        "template": "cluster-api-provider-kubevirt-1-0-0",
       }
     }
   ]'
@@ -106,7 +106,7 @@ metadata:
   name: kubevirt-demo
   namespace: kcm-system
 spec:
-  template: kubevirt-standalone-cp-0-3-2
+  template: kubevirt-standalone-cp-1-0-0
   credential: kubevirt-cluster-identity-cred
   config:
     controlPlaneNumber: 1

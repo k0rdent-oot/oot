@@ -1,0 +1,6 @@
+---
+replicaCount: 2
+image:
+  repository: registry.k8s.io/sig-storage/snapshot-controller
+  pullPolicy: IfNotPresent
+  tag: v8.2.0

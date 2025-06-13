@@ -1,0 +1,16 @@
+kubeletRootDir: /var/lib/k0s/kubelet
+infraClusterNamespace: kcm-system
+infraClusterLabels: csi-driver/cluster-tenant
+infraStorageClassName: standard
+csiDriver:
+  repo: quay.io/kubevirt
+  name: kubevirt-csi-driver
+  tag: latest
+csiNodeDriverRegistrar:
+  repo: k8s.gcr.io/sig-storage
+  name: csi-node-driver-registrar
+  tag: v2.10.1
+csiLivenessProbe:
+  repo: k8s.gcr.io/sig-storage
+  name: livenessprobe
+  tag: v2.12.0
