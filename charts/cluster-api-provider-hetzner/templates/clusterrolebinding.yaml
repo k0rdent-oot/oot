@@ -1,0 +1,15 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kcm-manager-role-hetznerclusters
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kcm-manager-role-hetznerclusters
+subjects:
+- kind: ServiceAccount
+  name: kcm-k0rdent-enterprise-controller-manager # k0rdent-enterprise
+  namespace: {{ .Release.Namespace }}
+- kind: ServiceAccount
+  name: kcm-controller-manager # k0rdent-oss
+  namespace: {{ .Release.Namespace }}

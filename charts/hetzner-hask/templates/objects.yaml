@@ -1,0 +1,9 @@
+{{- range $index, $object := .Values.objects }}
+---
+# Object index: {{ $index }}
+{{- if kindIs "string" $object }}
+{{ tpl $object $ }}
+{{- else }}
+{{ tpl (toYaml $object) $ }}
+{{- end }}
+{{- end }}

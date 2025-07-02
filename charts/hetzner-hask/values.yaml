@@ -1,0 +1,5 @@
+cluster: # @schema description: Basic cluster information; type: object
+  name: "" # @schema description: The name of the cluster; type: string
+
+clusterIdentity: # @schema description: The Hetzner Cloud Service Account credentials secret reference, auto-populated; type: object
+  name: "" # @schema description: The Hetzner Cloud Service Account credentials secret name, auto-populated; type: string

@@ -1,0 +1,23 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cluster-api-provider-hetzner-mgmt-patcher
+rules:
+  - apiGroups: ["k0rdent.mirantis.com"]
+    resources: ["managements"]
+    verbs: ["get", "patch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cluster-api-provider-hetzner-mgmt-patcher
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-api-provider-hetzner-mgmt-patcher
+subjects:
+  - kind: ServiceAccount
+    name: cluster-api-provider-hetzner-mgmt-patcher
+    namespace: {{ .Release.Namespace }}

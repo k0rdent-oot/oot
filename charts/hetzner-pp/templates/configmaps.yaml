@@ -1,0 +1,10 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-api-provider-hetzner-mgmt-patcher
+data:
+  mgmt-patcher.py: |
+{{ .Files.Get "files/mgmt-patcher.py" | indent 4 }}
+  requirements.txt: |
+{{ .Files.Get "files/requirements.txt" | indent 4 }}

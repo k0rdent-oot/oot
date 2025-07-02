@@ -2,7 +2,7 @@ apiVersion: v2
 name: cluster-api-provider-hetzner
 description: A Helm chart for Cluster API Provider Hetzner
 type: application
-version: 1.0.0
+version: 1.1.1
 appVersion: "1.0.3"
 annotations:
   cluster.x-k8s.io/provider: infrastructure-hetzner

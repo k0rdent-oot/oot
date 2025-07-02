@@ -1,0 +1,39 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cluster-api-provider-hetzner-mgmt-patcher
+spec:
+  template:
+    spec:
+      serviceAccountName: cluster-api-provider-hetzner-mgmt-patcher
+      restartPolicy: OnFailure
+      containers:
+        - name: mgmt-patcher
+          image: python:3.13-slim
+          command:
+            - /bin/bash
+            - -c
+            - |
+              python -m venv /tmp/venv
+              source /tmp/venv/bin/activate
+              pip install -r /data/requirements.txt
+              python /data/mgmt-patcher.py
+          env:
+            - name: API_VERSION
+              value: "k0rdent.mirantis.com/v1beta1"
+            - name: MANAGEMENT_NAME
+              value: "kcm"
+            - name: PROVIDER_NAME
+              value: "cluster-api-provider-hetzner"
+            - name: TEMPLATE_VALUE
+              value: "cluster-api-provider-hetzner"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+              readOnly: true
+      volumes:
+        - name: data
+          configMap:
+            name: cluster-api-provider-hetzner-mgmt-patcher
+            defaultMode: 0755

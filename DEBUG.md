@@ -5,15 +5,15 @@
 ### Pull
 
 ```bash
-helm pull oci://ghcr.io/k0rdent/kcm/charts/kcm --version 0.3.0 --untar --untardir ./TEMP/.
+helm pull oci://ghcr.io/k0rdent/kcm/charts/kcm --version 1.0.0 --untar --untardir ./TEMP/.
 ```
 
 ### Render
 
 ```bash
-helm template test oci://ghcr.io/k0rdent/kcm/charts/kcm --version 0.3.0 -n kcm-system --output-dir ./TEMP/.
+helm template test oci://ghcr.io/k0rdent/kcm/charts/kcm --version 1.0.0 -n kcm-system --output-dir ./TEMP/.
 
-helm template test oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt --version 0.3.0 \
+helm template test oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt --version 1.0.0 \
   -n kcm-system \
   --set kubevirt.configuration.developerConfiguration.featureGates="{useEmulation=true}" \
   --output-dir ./TEMP/.

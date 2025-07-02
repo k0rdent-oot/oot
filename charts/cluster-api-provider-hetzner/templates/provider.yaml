@@ -2,11 +2,14 @@ apiVersion: operator.cluster.x-k8s.io/v1alpha2
 kind: InfrastructureProvider
 metadata:
   name: hetzner
-  namespace: {{ .Values.config.namespace | default .Release.Namespace | trunc 63 }}
+  namespace: {{ .Release.Namespace }}
 spec:
-  version: v1.0.3
+  version: {{ printf "v%s" .Chart.AppVersion | quote }}
   {{- if .Values.config.secret.name }}
   configSecret:
     name: {{ .Values.config.secret.name }}
-    namespace: {{ .Values.config.namespace | default .Release.Namespace | trunc 63 }}
+    namespace: {{ .Release.Namespace }}
+  {{- end }}
+  {{- if .Values.manager }}
+  manager: {{ toYaml .Values.manager | nindent 4 }}
   {{- end }}
