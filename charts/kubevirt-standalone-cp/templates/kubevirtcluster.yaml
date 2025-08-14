@@ -7,3 +7,8 @@ spec:
   controlPlaneServiceTemplate:
     spec:
       type: LoadBalancer
+{{- if .Values.cluster.kubeConfigSecretRef }}
+  infraClusterSecretRef:
+    name: {{ .Values.cluster.kubeConfigSecretRef }}
+    namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
+{{- end }}
