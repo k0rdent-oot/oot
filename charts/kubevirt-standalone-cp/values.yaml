@@ -205,7 +205,7 @@ kubevirtCsiDriver:
   infraStorageClassName: "standard" # change with storage class of Mothership
   csiDriver:
     repo: quay.io/kubevirt
-    name: kubevirt-csi-driver
+    name: kcsi-driver
     tag: latest
   csiProvisioner:
     repo: k8s.gcr.io/sig-storage
@@ -232,7 +232,7 @@ kubevirtCsiDriver:
   topologySpreadConstraints:
     - labelSelector:
         matchLabels:
-          k8s-app: kubevirt-csi-driver-{{ .Release.Name }}
+          k8s-app: kcsi-driver-{{ .Release.Name }}
       matchLabelKeys:
         - pod-template-hash
       topologyKey: topology.kubernetes.io/zone

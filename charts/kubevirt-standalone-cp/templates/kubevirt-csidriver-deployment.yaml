@@ -3,18 +3,18 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: kubevirt-csi-driver-{{ .Release.Name }}
-  name: kubevirt-csi-controller-{{ .Release.Name }}
+    app: kcsi-driver-{{ .Release.Name }}
+  name: kcsi-controller-{{ .Release.Name }}
   namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
 spec:
   replicas: {{ .Values.kubevirtCsiDriver.replicas }}
   selector:
     matchLabels:
-      app: kubevirt-csi-driver-{{ .Release.Name }}
+      app: kcsi-driver-{{ .Release.Name }}
   template:
     metadata:
       labels:
-        app: kubevirt-csi-driver-{{ .Release.Name }}
+        app: kcsi-driver-{{ .Release.Name }}
     spec:
       containers:
       - args:
@@ -185,7 +185,7 @@ spec:
       nodeSelector: {{ toYaml .Values.kubevirtCsiDriver.nodeSelector | nindent 8 }}
       {{- end }}
       priorityClassName: system-cluster-critical
-      serviceAccount: kubevirt-csi-{{ .Release.Name }}
+      serviceAccount: kcsi-{{ .Release.Name }}
       tolerations:
       - key: CriticalAddonsOnly
         operator: Exists
