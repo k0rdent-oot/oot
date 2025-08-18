@@ -1,0 +1,109 @@
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0sControlPlane
+metadata:
+  name: {{ include "k0scontrolplane.name" . }}
+  namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
+spec:
+  replicas: {{ .Values.controlPlaneNumber }}
+  version: {{ .Values.k0s.version }}
+  k0sConfigSpec:
+    {{- if .Values.k0s.downloadURL }}
+    downloadURL: "{{ .Values.k0s.downloadURL }}"
+    {{- end }}
+    args:
+      - --enable-worker
+      {{- if .Values.k0s.cloudProvider.enabled }}
+      - --enable-cloud-provider
+      - --kubelet-extra-args="--cloud-provider=external"
+      {{- end }}
+      - --disable-components=konnectivity-server
+    files:
+    {{- if .Values.controlPlane.files }}
+      {{- toYaml .Values.controlPlane.files | nindent 6 }}
+    {{- end }}
+    preStartCommands:
+    {{- with .Values.controlPlane.preStartCommands }}
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    k0s:
+      apiVersion: k0s.k0sproject.io/v1beta1
+      kind: ClusterConfig
+      metadata:
+        name: k0s
+      spec:
+        api:
+          extraArgs:
+            anonymous-auth: "true"
+            {{- with .Values.k0s.api.extraArgs }}
+              {{- toYaml . | nindent 12 }}
+            {{- end }}
+        network:
+          podCIDR: {{ index .Values.clusterNetwork.pods.cidrBlocks 0 }}
+          serviceCIDR: {{ index .Values.clusterNetwork.services.cidrBlocks 0 }}
+          provider: calico
+          calico:
+            mode: vxlan
+            vxlanPort: {{ .Values.k0s.network.vxlanPort }}
+            envVars:
+              CALICO_IPV4POOL_CIDR: "{{ index .Values.clusterNetwork.pods.cidrBlocks 0 }}"
+              CLUSTER_TYPE: "k8s"
+              CALICO_IPV4POOL_IPIP: "Never"
+              CALICO_IPV4POOL_VXLAN: "Always"
+              FELIX_VXLANPORT: "{{ .Values.k0s.network.vxlanPort }}"
+              FELIX_ALLOWVXLANPACKETSFROMWORKLOADS: "true"
+        {{- if or .Values.k0s.helmCharts.kubernetesCSIExternalSnapshotter.enabled .Values.k0s.helmCharts.kubevirtCSIDriverTenant.enabled .Values.k0s.helmCharts.kubevirtCloudControllerManager.enabled }}
+        extensions:
+          helm:
+            charts:
+            {{- if .Values.k0s.helmCharts.kubernetesCSIExternalSnapshotter.enabled }}
+            - name: kubernetes-csi-external-snapshotter
+              chartname: oci://{{ .Values.k0s.helmCharts.kubernetesCSIExternalSnapshotter.repo }}/{{ .Values.k0s.helmCharts.kubernetesCSIExternalSnapshotter.name }}
+              version: {{ .Values.k0s.helmCharts.kubernetesCSIExternalSnapshotter.version }}
+              order: 1
+              namespace: kube-system
+              {{- if .Values.k0s.helmCharts.kubernetesCSIExternalSnapshotter.image.repository }}
+              values: |
+                image:
+                  repository: {{ .Values.k0s.helmCharts.kubernetesCSIExternalSnapshotter.image.repository }}
+              {{- end }}
+            {{- end }}
+            {{- if .Values.k0s.helmCharts.kubevirtCSIDriverTenant.enabled }}
+            - name: kubevirt-csi-driver-tenant
+              chartname: oci://{{ .Values.k0s.helmCharts.kubevirtCSIDriverTenant.repo }}/{{ .Values.k0s.helmCharts.kubevirtCSIDriverTenant.name }}
+              version: {{ .Values.k0s.helmCharts.kubevirtCSIDriverTenant.version }}
+              order: 2
+              namespace: kube-system
+              values: |
+                infraClusterNamespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
+                infraClusterLabels: csi-driver/cluster={{ .Release.Name }}
+                infraStorageClassName: {{ .Values.infraStorageClassName }}
+              {{- if or .Values.k0s.helmCharts.kubevirtCSIDriverTenant.images.csiDriver.repo .Values.k0s.helmCharts.kubevirtCSIDriverTenant.images.csiNodeDriverRegistrar.repo .Values.k0s.helmCharts.kubevirtCSIDriverTenant.images.csiLivenessProbe.repo }}
+                csiDriver:
+                  repo: {{ .Values.k0s.helmCharts.kubevirtCSIDriverTenant.images.csiDriver.repo }}
+                csiNodeDriverRegistrar:
+                  repo: {{ .Values.k0s.helmCharts.kubevirtCSIDriverTenant.images.csiNodeDriverRegistrar.repo }}
+                csiLivenessProbe:
+                  repo: {{ .Values.k0s.helmCharts.kubevirtCSIDriverTenant.images.csiLivenessProbe.repo }}
+              {{- end }}
+            {{- end }}
+            {{- if .Values.k0s.helmCharts.kubevirtCloudControllerManager.enabled }}
+            - name: kubevirt-cloud-controller-manager
+              chartname: oci://{{ .Values.k0s.helmCharts.kubevirtCloudControllerManager.repo }}/{{ .Values.k0s.helmCharts.kubevirtCloudControllerManager.name }}
+              version: {{ .Values.k0s.helmCharts.kubevirtCloudControllerManager.version }}
+              order: 3
+              namespace: kube-system
+              values: |
+                replicas: {{ .Values.k0s.helmCharts.kubevirtCloudControllerManager.replicas }}
+                repo: {{ .Values.k0s.helmCharts.kubevirtCloudControllerManager.repo }}
+                name: {{ .Values.k0s.helmCharts.kubevirtCloudControllerManager.name }}
+                tag: {{ .Values.k0s.helmCharts.kubevirtCloudControllerManager.tag }}
+                topologySpreadConstraints:
+                {{- toYaml .Values.k0s.helmCharts.kubevirtCloudControllerManager.topologySpreadConstraints | nindent 18 }}
+            {{- end }}
+        {{- end }}
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+      kind: KubevirtMachineTemplate
+      name: {{ include "kubevirtmachinetemplate.controlplane.name" . }}
+      namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}

@@ -1,0 +1,226 @@
+# @schema title: KubeVirt Cluster Configuration
+# @schema description: Configuration for KubeVirt based Kubernetes cluster
+
+# Cluster parameters
+controlPlaneNumber: 1 # @schema description: The number of the control plane nodes; type: number; minimum: 1
+workersNumber: 1 # @schema description: The number of the worker nodes; type: number; minimum: 1
+
+clusterIdentity: # @schema description: The KubeVirt Service Account credentials secret reference, auto-populated; type: object
+  name: "" # @schema description: The KubeVirt Service Account credentials secret name, auto-populated; type: string
+
+cluster: {} # @schema description: Basic cluster information; type: object
+  # kubeConfigSecretRef: "kubevirt-config" # @schema description: The name of the secret containing KubeVirt kubeconfig; type: string
+  # name: "" # @schema description: The name of the cluster; type: string
+  # namespace: "default" # @schema description: The namespace where cluster resources will be created; type: string
+
+clusterNetwork: # @schema description: The cluster network configuration; type: object
+  pods: # @schema description: The network ranges from which Pod networks are allocated; type: object
+    cidrBlocks: # @schema description: A list of CIDR blocks; type: array; item: string
+      - "10.243.0.0/16"
+  services: # @schema description: The network ranges from which service VIPs are allocated; type: object
+    cidrBlocks: # @schema description: A list of CIDR blocks; type: array; item: string
+      - "10.95.0.0/16"
+
+clusterLabels: {} # @schema description: Labels to apply to the cluster; type: object; additionalProperties: true
+clusterAnnotations: {} # @schema description: Annotations to apply to the cluster; type: object; additionalProperties: true
+
+# KubeVirt machines parameters
+controlPlane: # @schema description: Control plane parameters; type: object
+  runStrategy: Always # @schema description: VM run strategy (Always, Once, Manual, Halted); type: string; enum: [Always, Once, Manual, Halted]
+  cpus: 2 # @schema description: Number of CPUs allocated to control plane nodes; type: integer; minimum: 1
+  memory: "4Gi" # @schema description: Memory allocated to control plane nodes; type: string
+  bootstrapCheckStrategy: none # @schema description: Strategy for bootstrap checks; type: string; enum: [none, ssh]
+  image: ghcr.io/k0rdent-oot/kubevirt-container-disk:debian-latest # @schema description: Container disk image for control plane nodes; type: string
+
+  # Network interface configuration
+  defaultNetworkInterface: # @schema description: Default network interface configuration; type: object
+    type: bridge # @schema description: Interface type (bridge, masquerade, sriov); type: string; enum: [bridge, masquerade, sriov]
+    # ports: [] # @schema description: Port forwarding for masquerade type; type: array
+    #   - port: 80
+    #     protocol: TCP
+
+  additionalNetworkInterfaces: []
+  #  - name: bridge-net
+  #    multus:
+  #      networkName: bridge-1560
+  dataVolumes: []
+  #  - name: root
+  #    accessModes: ReadWriteMany
+  #    storage: 50Gi
+  #    volumeMode: Block
+  #    storageClassName: block-pool
+  #    source:
+  #      snapshot:
+  #        namespace: kcm-system
+  #        name: goldenimage-ubuntu2204
+  #  - name: data
+  #    accessModes: ReadWriteMany
+  #    storage: 1Gi
+  #    volumeMode: Block
+  #    storageClassName: block-pool
+  #    source:
+  #      blank: {}
+  files: []
+  #  - content: |
+  #        12345
+  #        67896
+  #        10111
+  #    permissions: "0644"
+  #    path: /etc/k0s/test.yaml
+  preStartCommands: # @schema description: Commands to run before starting K0s service; type: array; item: string
+    - apt update
+    - env DEBIAN_FRONTEND=noninteractive apt -y install qemu-guest-agent
+    - systemctl enable --now qemu-guest-agent
+
+  # Node selector
+  nodeSelector: {} # @schema description: Node selector for VM placement; type: object; additionalProperties: true
+
+  # Network configuration
+  networkInterfaceMultiqueue: true # @schema description: Enable network interface multiqueue; type: boolean
+
+  # Cloud-init configuration
+  cloudInit: # @schema description: Cloud-init configuration; type: object
+    userData: "" # @schema description: Cloud-init user data; type: string
+
+worker: # @schema description: Worker parameters; type: object
+  runStrategy: Once # @schema description: VM run strategy (Always, Once, Manual, Halted); type: string; enum: [Always, Once, Manual, Halted]
+  cpus: 2 # @schema description: Number of CPUs allocated to worker nodes; type: integer; minimum: 1
+  memory: "4Gi" # @schema description: Memory allocated to worker nodes; type: string
+  bootstrapCheckStrategy: none # @schema description: Strategy for bootstrap checks; type: string; enum: [none, ssh]
+  image: ghcr.io/k0rdent-oot/kubevirt-container-disk:debian-latest # @schema description: Container disk image for worker nodes; type: string
+  imagePullPolicy: IfNotPresent # @schema description: Image pull policy for container disk; type: string; enum: [Always, IfNotPresent, Never]
+
+  # VM and template annotations
+  annotations: {} # @schema description: Annotations to apply to VirtualMachine and template; type: object; additionalProperties: true
+
+  # CPU configuration
+  cpu: # @schema description: CPU configuration; type: object
+    dedicatedCpuPlacement: false # @schema description: Enable dedicated CPU placement; type: boolean
+    isolateEmulatorThread: false # @schema description: Isolate emulator thread; type: boolean
+    model: "" # @schema description: CPU model (e.g., host-passthrough); type: string
+    numa: {} # @schema description: NUMA configuration; type: object; additionalProperties: true
+
+  # Memory configuration
+  memoryConfig: # @schema description: Advanced memory configuration; type: object
+    hugepages: {} # @schema description: Hugepages configuration; type: object; additionalProperties: true
+    guest: "" # @schema description: Guest memory (e.g., 512Gi); type: string
+    requests: "" # @schema description: Memory requests (e.g., 528Gi); type: string
+    limits: "" # @schema description: Memory limits (e.g., 528Gi); type: string
+
+  # Device configuration
+  devices: # @schema description: Device configuration; type: object
+    autoattachMemBalloon: true # @schema description: Auto-attach memory balloon; type: boolean
+    autoattachSerialConsole: true # @schema description: Auto-attach serial console; type: boolean
+    autoattachGraphicsDevice: true # @schema description: Auto-attach graphics device; type: boolean
+    hostDevices: [] # @schema description: Host devices to attach; type: array
+    #  - deviceName: nvidia.com/gpu
+    #    name: gpu1
+    #  - deviceName: mellanox.com/connectx
+    #    name: connectx1
+
+  # Node selector
+  nodeSelector: {} # @schema description: Node selector for VM placement; type: object; additionalProperties: true
+
+  # Network configuration
+  networkInterfaceMultiqueue: true # @schema description: Enable network interface multiqueue; type: boolean
+
+  # Network interface configuration
+  defaultNetworkInterface: # @schema description: Default network interface configuration; type: object
+    type: bridge # @schema description: Interface type (bridge, masquerade, sriov); type: string; enum: [bridge, masquerade, sriov]
+    # ports: [] # @schema description: Port forwarding for masquerade type; type: array
+    #   - port: 80
+    #     protocol: TCP
+
+  # Cloud-init configuration
+  cloudInit: # @schema description: Cloud-init configuration; type: object
+    userData: "" # @schema description: Cloud-init user data; type: string
+
+  additionalNetworkInterfaces: []
+  #  - name: bridge-net
+  #    multus:
+  #      networkName: bridge-1560
+  dataVolumes: []
+  #  - name: root
+  #    accessModes: ReadWriteMany
+  #    storage: 50Gi
+  #    volumeMode: Block
+  #    storageClassName: block-pool
+  #    source:
+  #      snapshot:
+  #        namespace: kcm-system
+  #        name: goldenimage-ubuntu2204
+  #  - name: data
+  #    accessModes: ReadWriteMany
+  #    storage: 1Gi
+  #    volumeMode: Block
+  #    storageClassName: block-pool
+  #    source:
+  #      blank: {}
+  files: []
+  #  - content: |
+  #        12345
+  #        67896
+  #        10111
+  #    permissions: "0644"
+  #    path: /etc/k0s/test.yaml
+  preStartCommands: # @schema description: Commands to run before starting K0s service; type: array; item: string
+    - apt update
+    - env DEBIAN_FRONTEND=noninteractive apt -y install qemu-guest-agent
+    - systemctl enable --now qemu-guest-agent
+
+# K0s parameters
+k0s: # @schema description: K0s parameters; type: object
+  version: v1.33.3+k0s.0 # @schema description: K0s version; type: string
+  downloadURL: "" # @schema description: Custom download URL for K0s binary. If empty, uses default K0s release URL; type: string
+  cloudProvider: # @schema description: Cloud provider configuration; type: object
+    enabled: false # @schema description: Enable cloud provider support; type: boolean
+  api: # @schema description: Kubernetes API server parameters; type: object; additionalProperties: true
+    extraArgs: {} # @schema description: Map of key-values (strings) for any extra arguments to pass down to Kubernetes api-server process; type: object; additionalProperties: true
+  network: # @schema description: Network configuration for K0s; type: object
+    vxlanPort: 6789 # @schema description: Port to use for VXLAN tunnels; type: number; minimum: 1; maximum: 65535
+  helmCharts: # @schema description: Helm chart deployment configurations; type: object
+    kubernetesCSIExternalSnapshotter: # @schema description: Kubernetes CSI external snapshotter configuration; type: object
+      enabled: false # @schema description: Enable kubernetes-csi-external-snapshotter helm chart in k0s; type: boolean
+      repo: ghcr.io/k0rdent-oot/oot/charts/ # @schema description: Chart repository; type: string
+      name: kubernetes-csi-external-snapshotter # @schema description: Chart name; type: string
+      version: "v8.2.0" # @schema description: Chart version for kubernetes-csi-external-snapshotter; type: string
+      image: # @schema description: Image configuration for snapshot-controller; type: object
+        repository: "" # @schema description: Image repository for snapshot-controller; type: string
+    kubevirtCSIDriverTenant: # @schema description: KubeVirt CSI driver tenant configuration; type: object
+      enabled: false # @schema description: Enable kubevirt-csi-driver-tenant helm chart in k0s; type: boolean
+      repo: ghcr.io/k0rdent-oot/oot/charts/ # @schema description: Chart repository; type: string
+      name: kubevirt-csi-driver-tenant # @schema description: Chart name; type: string
+      version: "1.5.0" # @schema description: Chart version for kubevirt-csi-driver-tenant; type: string
+      images: # @schema description: Image configurations for CSI driver components; type: object
+        csiDriver: # @schema description: CSI driver image configuration; type: object
+          repo: "" # @schema description: Image repository for CSI driver; type: string
+        csiNodeDriverRegistrar: # @schema description: CSI node driver registrar image configuration; type: object
+          repo: "" # @schema description: Image repository for CSI node driver registrar; type: string
+        csiLivenessProbe: # @schema description: CSI liveness probe image configuration; type: object
+          repo: "" # @schema description: Image repository for CSI liveness probe; type: string
+    kubevirtCloudControllerManager: # @schema description: KubeVirt cloud controller manager configuration; type: object
+      enabled: false # @schema description: Enable kubevirt-cloud-controller-manager helm chart in k0s; type: boolean
+      repo: ghcr.io/k0rdent-oot/oot/charts/ # @schema description: Chart repository; type: string
+      name: kubevirt-cloud-controller-manager # @schema description: Chart name; type: string
+      version: "1.5.0" # @schema description: Chart version for kubevirt-cloud-controller-manager; type: string
+      tag: "" # @schema description: Image tag for kubevirt-cloud-controller-manager, if empty uses chart default; type: string
+      replicas: 1 # @schema description: Number of replicas for cloud controller manager; type: integer; minimum: 1
+      topologySpreadConstraints: # @schema description: Topology spread constraints for cloud controller manager; type: array
+        - labelSelector:
+            matchLabels:
+              k8s-app: kccm-{{ .Release.Name }}
+          matchLabelKeys:
+            - pod-template-hash
+          topologyKey: topology.kubernetes.io/zone
+          maxSkew: 1
+          whenUnsatisfiable: ScheduleAnyway
+
+# CSI Driver configuration for k0s helm chart
+infraStorageClassName: "standard" # @schema description: Infrastructure storage class name for CSI driver; type: string
+
+machineHealthCheck: # @schema description: Machine health check configuration; type: object
+  enabled: false # @schema description: Enable machine health checks; type: boolean
+  maxUnhealthy: 40% # @schema description: Maximum unhealthy machines threshold; type: string
+
+# Generic objects creation
+objects: [] # @schema description: List of generic Kubernetes objects to create; type: array

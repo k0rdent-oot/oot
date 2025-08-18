@@ -1,0 +1,25 @@
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: K0sWorkerConfigTemplate
+metadata:
+  name: {{ include "k0sworkerconfigtemplate.name" . }}
+  namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
+spec:
+  template:
+    spec:
+      {{- if .Values.k0s.downloadURL }}
+      downloadURL: "{{ .Values.k0s.downloadURL }}"
+      {{- end }}
+      version: {{ .Values.k0s.version }}
+      args:
+        {{- if .Values.k0s.cloudProvider.enabled }}
+        - --enable-cloud-provider
+        - --kubelet-extra-args="--cloud-provider=external"
+        {{- end }}
+      files:
+      {{- if .Values.worker.files }}
+        {{- toYaml .Values.worker.files | nindent 8 }}
+      {{- end }}
+      preStartCommands:
+      {{- with .Values.worker.preStartCommands }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

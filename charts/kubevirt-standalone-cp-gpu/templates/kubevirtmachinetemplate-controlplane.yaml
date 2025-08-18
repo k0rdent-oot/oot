@@ -1,0 +1,112 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: KubevirtMachineTemplate
+metadata:
+  name: {{ include "kubevirtmachinetemplate.controlplane.name" . }}
+  namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
+spec:
+  template:
+    spec:
+      virtualMachineBootstrapCheck:
+        checkStrategy: {{ .Values.controlPlane.bootstrapCheckStrategy }}
+      virtualMachineTemplate:
+        metadata:
+          namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
+        spec:
+          runStrategy: {{ .Values.controlPlane.runStrategy }}
+          template:
+            spec:
+              {{- with .Values.controlPlane.nodeSelector }}
+              nodeSelector:
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
+              # https://doc.crds.dev/github.com/kubernetes-sigs/cluster-api-provider-kubevirt/infrastructure.cluster.x-k8s.io/KubevirtMachineTemplate/v1alpha1@v0.1.9#spec-template-spec-virtualMachineTemplate-spec-template
+              domain:
+                cpu:
+                  cores: {{ .Values.controlPlane.cpus }}
+                devices:
+                  interfaces:
+                  - name: default
+                    {{- if eq .Values.controlPlane.defaultNetworkInterface.type "bridge" }}
+                    bridge: {}
+                    {{- else if eq .Values.controlPlane.defaultNetworkInterface.type "masquerade" }}
+                    masquerade: {}
+                    {{- if .Values.controlPlane.defaultNetworkInterface.ports }}
+                    ports:
+                      {{- toYaml .Values.controlPlane.defaultNetworkInterface.ports | nindent 22 }}
+                    {{- end }}
+                    {{- else if eq .Values.controlPlane.defaultNetworkInterface.type "sriov" }}
+                    sriov: {}
+                    {{- else }}
+                    bridge: {}
+                    {{- end }}
+                  {{- range .Values.controlPlane.additionalNetworkInterfaces }}
+                  - name: {{ .name }}
+                    bridge: {}
+                  {{- end }}
+                  disks:
+                  {{- if .Values.controlPlane.dataVolumes }}
+                  {{- range .Values.controlPlane.dataVolumes }}
+                    - disk:
+                        bus: virtio
+                      name: {{ .name }}
+                  {{- end }}
+                  {{- else }}
+                    - disk:
+                        bus: virtio
+                      name: containerdisk
+                  {{- if .Values.controlPlane.cloudInit.userData }}
+                    - disk:
+                        bus: virtio
+                      name: cloudinitdisk
+                  {{- end }}
+                  {{- end }}
+                  networkInterfaceMultiqueue: {{ .Values.controlPlane.networkInterfaceMultiqueue }}
+                memory:
+                  guest: {{ .Values.controlPlane.memory }}
+              evictionStrategy: External
+              networks:
+                - name: default
+                  pod: {}
+              {{- with .Values.controlPlane.additionalNetworkInterfaces }}
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
+              volumes:
+                {{- if .Values.controlPlane.dataVolumes }}
+                {{- range .Values.controlPlane.dataVolumes }}
+                - name: {{ .name }}
+                  dataVolume:
+                    name: {{ .name }}
+                {{- end }}
+                {{- else }}
+                - name: containerdisk
+                  containerDisk:
+                    image: {{ .Values.controlPlane.image }}
+                {{- if .Values.controlPlane.cloudInit.userData }}
+                - name: cloudinitdisk
+                  cloudInitNoCloud:
+                    userData: {{ .Values.controlPlane.cloudInit.userData | quote }}
+                {{- end }}
+                {{- end }}
+          {{- if .Values.controlPlane.dataVolumes }}
+          dataVolumeTemplates:
+          {{- range .Values.controlPlane.dataVolumes }}
+          - apiVersion: cdi.kubevirt.io/v1beta1
+            kind: DataVolume
+            metadata:
+              name: {{ .name }}
+              annotations:
+                # https://github.com/kubevirt/containerized-data-importer/blob/main/doc/waitforfirstconsumer-storage-handling.md
+                cdi.kubevirt.io/storage.bind.immediate.requested: ""
+            spec:
+              pvc:
+                accessModes:
+                - {{ .accessModes }}
+                resources:
+                  requests:
+                    storage: {{ .storage }}
+                volumeMode: {{ .volumeMode }}
+                storageClassName: {{ .storageClassName }}
+              source:
+                {{- toYaml .source | nindent 16 }}
+          {{- end }}
+          {{- end }}

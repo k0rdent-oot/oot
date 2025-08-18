@@ -1,0 +1,174 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: KubevirtMachineTemplate
+metadata:
+  name: {{ include "kubevirtmachinetemplate.worker.name" . }}
+  namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
+spec:
+  template:
+    spec:
+      virtualMachineBootstrapCheck:
+        checkStrategy: {{ .Values.worker.bootstrapCheckStrategy }}
+      virtualMachineTemplate:
+        metadata:
+          namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
+          {{- with .Values.worker.annotations }}
+          annotations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        spec:
+          runStrategy: {{ .Values.worker.runStrategy }}
+          template:
+            metadata:
+              {{- with .Values.worker.annotations }}
+              annotations:
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
+            spec:
+              {{- with .Values.worker.nodeSelector }}
+              nodeSelector:
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
+              # https://doc.crds.dev/github.com/kubernetes-sigs/cluster-api-provider-kubevirt/infrastructure.cluster.x-k8s.io/KubevirtMachineTemplate/v1alpha1@v0.1.9#spec-template-spec-virtualMachineTemplate-spec-template
+              domain:
+                cpu:
+                  cores: {{ .Values.worker.cpus }}
+                  {{- if .Values.worker.cpu.dedicatedCpuPlacement }}
+                  dedicatedCpuPlacement: {{ .Values.worker.cpu.dedicatedCpuPlacement }}
+                  {{- end }}
+                  {{- if .Values.worker.cpu.isolateEmulatorThread }}
+                  isolateEmulatorThread: {{ .Values.worker.cpu.isolateEmulatorThread }}
+                  {{- end }}
+                  {{- if .Values.worker.cpu.model }}
+                  model: {{ .Values.worker.cpu.model }}
+                  {{- end }}
+                  {{- with .Values.worker.cpu.numa }}
+                  numa:
+                    {{- toYaml . | nindent 20 }}
+                  {{- end }}
+                devices:
+                  {{- if hasKey .Values.worker.devices "autoattachMemBalloon" }}
+                  autoattachMemBalloon: {{ .Values.worker.devices.autoattachMemBalloon }}
+                  {{- end }}
+                  {{- if hasKey .Values.worker.devices "autoattachSerialConsole" }}
+                  autoattachSerialConsole: {{ .Values.worker.devices.autoattachSerialConsole }}
+                  {{- end }}
+                  {{- if hasKey .Values.worker.devices "autoattachGraphicsDevice" }}
+                  autoattachGraphicsDevice: {{ .Values.worker.devices.autoattachGraphicsDevice }}
+                  {{- end }}
+                  interfaces:
+                  - name: default
+                    {{- if eq .Values.worker.defaultNetworkInterface.type "bridge" }}
+                    bridge: {}
+                    {{- else if eq .Values.worker.defaultNetworkInterface.type "masquerade" }}
+                    masquerade: {}
+                    {{- if .Values.worker.defaultNetworkInterface.ports }}
+                    ports:
+                      {{- toYaml .Values.worker.defaultNetworkInterface.ports | nindent 22 }}
+                    {{- end }}
+                    {{- else if eq .Values.worker.defaultNetworkInterface.type "sriov" }}
+                    sriov: {}
+                    {{- else }}
+                    bridge: {}
+                    {{- end }}
+                  {{- range .Values.worker.additionalNetworkInterfaces }}
+                  - name: {{ .name }}
+                    bridge: {}
+                  {{- end }}
+                  disks:
+                  {{- if .Values.worker.dataVolumes }}
+                  {{- range .Values.worker.dataVolumes }}
+                    - disk:
+                        bus: virtio
+                      name: {{ .name }}
+                  {{- end }}
+                  {{- else }}
+                    - disk:
+                        bus: virtio
+                      name: containerdisk
+                  {{- if .Values.worker.cloudInit.userData }}
+                    - disk:
+                        bus: virtio
+                      name: cloudinitdisk
+                  {{- end }}
+                  {{- end }}
+                  {{- with .Values.worker.devices.hostDevices }}
+                  hostDevices:
+                    {{- toYaml . | nindent 20 }}
+                  {{- end }}
+                  networkInterfaceMultiqueue: {{ .Values.worker.networkInterfaceMultiqueue }}
+                {{- if or .Values.worker.memoryConfig.hugepages .Values.worker.memoryConfig.guest }}
+                memory:
+                  {{- if .Values.worker.memoryConfig.guest }}
+                  guest: {{ .Values.worker.memoryConfig.guest }}
+                  {{- else }}
+                  guest: {{ .Values.worker.memory }}
+                  {{- end }}
+                  {{- with .Values.worker.memoryConfig.hugepages }}
+                  hugepages:
+                    {{- toYaml . | nindent 20 }}
+                  {{- end }}
+                {{- else }}
+                memory:
+                  guest: {{ .Values.worker.memory }}
+                {{- end }}
+                {{- if or .Values.worker.memoryConfig.requests .Values.worker.memoryConfig.limits }}
+                resources:
+                  {{- if .Values.worker.memoryConfig.requests }}
+                  requests:
+                    memory: {{ .Values.worker.memoryConfig.requests }}
+                  {{- end }}
+                  {{- if .Values.worker.memoryConfig.limits }}
+                  limits:
+                    memory: {{ .Values.worker.memoryConfig.limits }}
+                  {{- end }}
+                {{- end }}
+              evictionStrategy: External
+              networks:
+                - name: default
+                  pod: {}
+              {{- with .Values.worker.additionalNetworkInterfaces }}
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
+              volumes:
+                {{- if .Values.worker.dataVolumes }}
+                {{- range .Values.worker.dataVolumes }}
+                - name: {{ .name }}
+                  dataVolume:
+                    name: {{ .name }}
+                {{- end }}
+                {{- else }}
+                - name: containerdisk
+                  containerDisk:
+                    image: {{ .Values.worker.image }}
+                    {{- if .Values.worker.imagePullPolicy }}
+                    imagePullPolicy: {{ .Values.worker.imagePullPolicy }}
+                    {{- end }}
+                {{- if .Values.worker.cloudInit.userData }}
+                - name: cloudinitdisk
+                  cloudInitNoCloud:
+                    userData: {{ .Values.worker.cloudInit.userData | quote }}
+                {{- end }}
+                {{- end }}
+          {{- if .Values.worker.dataVolumes }}
+          dataVolumeTemplates:
+          {{- range .Values.worker.dataVolumes }}
+          - apiVersion: cdi.kubevirt.io/v1beta1
+            kind: DataVolume
+            metadata:
+              name: {{ .name }}
+              annotations:
+                # https://github.com/kubevirt/containerized-data-importer/blob/main/doc/waitforfirstconsumer-storage-handling.md
+                cdi.kubevirt.io/storage.bind.immediate.requested: ""
+            spec:
+              pvc:
+                accessModes:
+                - {{ .accessModes }}
+                resources:
+                  requests:
+                    storage: {{ .storage }}
+                volumeMode: {{ .volumeMode }}
+                storageClassName: {{ .storageClassName }}
+              source:
+                {{- toYaml .source | nindent 16 }}
+          {{- end }}
+          {{- end }}
