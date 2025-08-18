@@ -7,6 +7,6 @@ roleRef:
   kind: ClusterRole
   name: kccm-{{ .Release.Namespace | trunc 63 }}-{{ .Release.Name }}
 subjects:
-- kind: ServiceAccount
-  name: kccm-{{ .Release.Name }}
-  namespace: {{ .Release.Namespace | trunc 63 }}
+  - kind: ServiceAccount
+    name: kccm-{{ .Release.Name }}
+    namespace: {{ .Release.Namespace | trunc 63 }}

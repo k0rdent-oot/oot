@@ -3,9 +3,9 @@ kind: ClusterRole
 metadata:
   name: kccm-{{ .Release.Namespace | trunc 63 }}-{{ .Release.Name }}
 rules:
-- apiGroups:
-  - ""
-  resources:
-  - nodes
-  verbs:
-  - get
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - get

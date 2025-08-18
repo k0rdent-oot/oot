@@ -26,7 +26,7 @@ clusterAnnotations: {} # @schema description: Annotations to apply to the cluste
 
 # KubeVirt machines parameters
 controlPlane: # @schema description: Control plane parameters; type: object
-  runStrategy: Always
+  runStrategy: Always # @schema description: VM run strategy (Always, Once, Manual, Halted); type: string; enum: [Always, Once, Manual, Halted]
   cpus: 2 # @schema description: Number of CPUs allocated to control plane nodes; type: integer; minimum: 1
   memory: "4Gi" # @schema description: Memory allocated to control plane nodes; type: string
   bootstrapCheckStrategy: none # @schema description: Strategy for bootstrap checks; type: string; enum: [none, ssh]
@@ -83,7 +83,7 @@ controlPlane: # @schema description: Control plane parameters; type: object
     userData: "" # @schema description: Cloud-init user data; type: string
 
 worker: # @schema description: Worker parameters; type: object
-  runStrategy: Once
+  runStrategy: Once # @schema description: VM run strategy (Always, Once, Manual, Halted); type: string; enum: [Always, Once, Manual, Halted]
   cpus: 2 # @schema description: Number of CPUs allocated to worker nodes; type: integer; minimum: 1
   memory: "4Gi" # @schema description: Memory allocated to worker nodes; type: string
   bootstrapCheckStrategy: none # @schema description: Strategy for bootstrap checks; type: string; enum: [none, ssh]
@@ -171,42 +171,56 @@ worker: # @schema description: Worker parameters; type: object
 # K0s parameters
 k0s: # @schema description: K0s parameters; type: object
   version: v1.33.3+k0s.0 # @schema description: K0s version; type: string
-  cloudProvider:
+  downloadURL: "" # @schema description: Custom download URL for K0s binary. If empty, uses default K0s release URL; type: string
+  cloudProvider: # @schema description: Cloud provider configuration; type: object
     enabled: false # @schema description: Enable cloud provider support; type: boolean
   api: # @schema description: Kubernetes API server parameters; type: object; additionalProperties: true
     extraArgs: {} # @schema description: Map of key-values (strings) for any extra arguments to pass down to Kubernetes api-server process; type: object; additionalProperties: true
   network: # @schema description: Network configuration for K0s; type: object
     vxlanPort: 6789 # @schema description: Port to use for VXLAN tunnels; type: number; minimum: 1; maximum: 65535
   helmCharts: # @schema description: Helm chart deployment configurations; type: object
-    kubernetesCSIExternalSnapshotter:
+    kubernetesCSIExternalSnapshotter: # @schema description: Kubernetes CSI external snapshotter configuration; type: object
       enabled: false # @schema description: Enable kubernetes-csi-external-snapshotter helm chart in k0s; type: boolean
-    kubevirtCSIDriverTenant:
+      repo: ghcr.io/k0rdent-oot/oot/charts/ # @schema description: Chart repository; type: string
+      name: kubernetes-csi-external-snapshotter # @schema description: Chart name; type: string
+      version: "v8.2.0" # @schema description: Chart version for kubernetes-csi-external-snapshotter; type: string
+      image: # @schema description: Image configuration for snapshot-controller; type: object
+        repository: "" # @schema description: Image repository for snapshot-controller, if empty uses global registry with sig-storage/snapshot-controller; type: string
+    kubevirtCSIDriverTenant: # @schema description: KubeVirt CSI driver tenant configuration; type: object
       enabled: false # @schema description: Enable kubevirt-csi-driver-tenant helm chart in k0s; type: boolean
-    kubevirtCloudControllerManager:
+      repo: ghcr.io/k0rdent-oot/oot/charts/ # @schema description: Chart repository; type: string
+      name: kubevirt-csi-driver-tenant # @schema description: Chart name; type: string
+      version: "1.5.0" # @schema description: Chart version for kubevirt-csi-driver-tenant; type: string
+      images: # @schema description: Image configurations for CSI driver components; type: object
+        csiDriver: # @schema description: CSI driver image configuration; type: object
+          repo: "" # @schema description: Image repository for CSI driver, if empty uses global registry with kubevirt; type: string
+        csiNodeDriverRegistrar: # @schema description: CSI node driver registrar image configuration; type: object
+          repo: "" # @schema description: Image repository for CSI node driver registrar, if empty uses global registry with sig-storage; type: string
+        csiLivenessProbe: # @schema description: CSI liveness probe image configuration; type: object
+          repo: "" # @schema description: Image repository for CSI liveness probe, if empty uses global registry with sig-storage; type: string
+    kubevirtCloudControllerManager: # @schema description: KubeVirt cloud controller manager configuration; type: object
       enabled: false # @schema description: Enable kubevirt-cloud-controller-manager helm chart in k0s; type: boolean
+      repo: ghcr.io/k0rdent-oot/oot/charts/ # @schema description: Chart repository; type: string
+      name: kubevirt-cloud-controller-manager # @schema description: Chart name; type: string
+      version: "1.5.0" # @schema description: Chart version for kubevirt-cloud-controller-manager; type: string
+      tag: "" # @schema description: Image tag for kubevirt-cloud-controller-manager, if empty uses chart default; type: string
+      replicas: 1 # @schema description: Number of replicas for cloud controller manager; type: integer; minimum: 1
+      topologySpreadConstraints: # @schema description: Topology spread constraints for cloud controller manager; type: array
+        - labelSelector:
+            matchLabels:
+              k8s-app: kccm-{{ .Release.Name }}
+          matchLabelKeys:
+            - pod-template-hash
+          topologyKey: topology.kubernetes.io/zone
+          maxSkew: 1
+          whenUnsatisfiable: ScheduleAnyway
 
 # CSI Driver configuration for k0s helm chart
 infraStorageClassName: "standard" # @schema description: Infrastructure storage class name for CSI driver; type: string
 
-cloudControllerManager:
-  replicas: 1
-  repo: quay.io/kubevirt
-  name: kubevirt-cloud-controller-manager
-  tag: main
-  topologySpreadConstraints:
-    - labelSelector:
-        matchLabels:
-          k8s-app: kubevirt-cloud-controller-manager-{{ .Release.Name }}
-      matchLabelKeys:
-        - pod-template-hash
-      topologyKey: topology.kubernetes.io/zone
-      maxSkew: 1
-      whenUnsatisfiable: ScheduleAnyway
-
-
-machineHealthCheck:
-  enabled: false
-  maxUnhealthy: 40%
+machineHealthCheck: # @schema description: Machine health check configuration; type: object
+  enabled: false # @schema description: Enable machine health checks; type: boolean
+  maxUnhealthy: 40% # @schema description: Maximum unhealthy machines threshold; type: string
 
 # Generic objects creation
 objects: [] # @schema description: List of generic Kubernetes objects to create; type: array

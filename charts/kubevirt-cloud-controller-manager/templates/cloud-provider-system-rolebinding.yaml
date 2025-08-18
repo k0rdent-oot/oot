@@ -8,6 +8,6 @@ roleRef:
   kind: Role
   name: extension-apiserver-authentication-reader
 subjects:
-- kind: ServiceAccount
-  name: kccm-{{ .Release.Name }}
-  namespace: {{ .Release.Namespace | trunc 63 }}
+  - kind: ServiceAccount
+    name: kccm-{{ .Release.Name }}
+    namespace: {{ .Release.Namespace | trunc 63 }}

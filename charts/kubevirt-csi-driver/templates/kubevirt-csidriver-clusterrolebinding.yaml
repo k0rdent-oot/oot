@@ -9,4 +9,5 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: kcsi-{{ .Release.Name }}
-    namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
+    namespace:
+      {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}

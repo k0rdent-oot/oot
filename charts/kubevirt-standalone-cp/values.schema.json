@@ -2,59 +2,6 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
-        "cloudControllerManager": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "replicas": {
-                    "type": "integer"
-                },
-                "repo": {
-                    "type": "string"
-                },
-                "tag": {
-                    "type": "string"
-                },
-                "topologySpreadConstraints": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "labelSelector": {
-                                "type": "object",
-                                "properties": {
-                                    "matchLabels": {
-                                        "type": "object",
-                                        "properties": {
-                                            "k8s-app": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            "matchLabelKeys": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            },
-                            "maxSkew": {
-                                "type": "integer"
-                            },
-                            "topologyKey": {
-                                "type": "string"
-                            },
-                            "whenUnsatisfiable": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "cluster": {
             "description": "Basic cluster information",
             "type": [
@@ -231,7 +178,16 @@
                     }
                 },
                 "runStrategy": {
-                    "type": "string"
+                    "description": "VM run strategy (Always, Once, Manual, Halted)",
+                    "type": [
+                        "string"
+                    ],
+                    "enum": [
+                        "Always",
+                        "Once",
+                        "Manual",
+                        "Halted"
+                    ]
                 }
             }
         },
@@ -241,6 +197,12 @@
                 "number"
             ],
             "minimum": 1
+        },
+        "infraStorageClassName": {
+            "description": "Infrastructure storage class name for CSI driver",
+            "type": [
+                "string"
+            ]
         },
         "k0s": {
             "description": "K0s parameters",
@@ -265,7 +227,10 @@
                     "additionalProperties": true
                 },
                 "cloudProvider": {
-                    "type": "object",
+                    "description": "Cloud provider configuration",
+                    "type": [
+                        "object"
+                    ],
                     "properties": {
                         "enabled": {
                             "description": "Enable cloud provider support",
@@ -275,6 +240,12 @@
                         }
                     }
                 },
+                "downloadURL": {
+                    "description": "Custom download URL for K0s binary. If empty, uses default K0s release URL",
+                    "type": [
+                        "string"
+                    ]
+                },
                 "helmCharts": {
                     "description": "Helm chart deployment configurations",
                     "type": [
@@ -282,34 +253,213 @@
                     ],
                     "properties": {
                         "kubernetesCSIExternalSnapshotter": {
-                            "type": "object",
+                            "description": "Kubernetes CSI external snapshotter configuration",
+                            "type": [
+                                "object"
+                            ],
                             "properties": {
                                 "enabled": {
                                     "description": "Enable kubernetes-csi-external-snapshotter helm chart in k0s",
                                     "type": [
                                         "boolean"
                                     ]
+                                },
+                                "image": {
+                                    "description": "Image configuration for snapshot-controller",
+                                    "type": [
+                                        "object"
+                                    ],
+                                    "properties": {
+                                        "repository": {
+                                            "description": "Image repository for snapshot-controller, if empty uses global registry with sig-storage/snapshot-controller",
+                                            "type": [
+                                                "string"
+                                            ]
+                                        }
+                                    }
+                                },
+                                "name": {
+                                    "description": "Chart name",
+                                    "type": [
+                                        "string"
+                                    ]
+                                },
+                                "repo": {
+                                    "description": "Chart repository",
+                                    "type": [
+                                        "string"
+                                    ]
+                                },
+                                "version": {
+                                    "description": "Chart version for kubernetes-csi-external-snapshotter",
+                                    "type": [
+                                        "string"
+                                    ]
                                 }
                             }
                         },
                         "kubevirtCSIDriverTenant": {
-                            "type": "object",
+                            "description": "KubeVirt CSI driver tenant configuration",
+                            "type": [
+                                "object"
+                            ],
                             "properties": {
                                 "enabled": {
                                     "description": "Enable kubevirt-csi-driver-tenant helm chart in k0s",
                                     "type": [
                                         "boolean"
                                     ]
+                                },
+                                "images": {
+                                    "description": "Image configurations for CSI driver components",
+                                    "type": [
+                                        "object"
+                                    ],
+                                    "properties": {
+                                        "csiDriver": {
+                                            "description": "CSI driver image configuration",
+                                            "type": [
+                                                "object"
+                                            ],
+                                            "properties": {
+                                                "repo": {
+                                                    "description": "Image repository for CSI driver, if empty uses global registry with kubevirt",
+                                                    "type": [
+                                                        "string"
+                                                    ]
+                                                }
+                                            }
+                                        },
+                                        "csiLivenessProbe": {
+                                            "description": "CSI liveness probe image configuration",
+                                            "type": [
+                                                "object"
+                                            ],
+                                            "properties": {
+                                                "repo": {
+                                                    "description": "Image repository for CSI liveness probe, if empty uses global registry with sig-storage",
+                                                    "type": [
+                                                        "string"
+                                                    ]
+                                                }
+                                            }
+                                        },
+                                        "csiNodeDriverRegistrar": {
+                                            "description": "CSI node driver registrar image configuration",
+                                            "type": [
+                                                "object"
+                                            ],
+                                            "properties": {
+                                                "repo": {
+                                                    "description": "Image repository for CSI node driver registrar, if empty uses global registry with sig-storage",
+                                                    "type": [
+                                                        "string"
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "name": {
+                                    "description": "Chart name",
+                                    "type": [
+                                        "string"
+                                    ]
+                                },
+                                "repo": {
+                                    "description": "Chart repository",
+                                    "type": [
+                                        "string"
+                                    ]
+                                },
+                                "version": {
+                                    "description": "Chart version for kubevirt-csi-driver-tenant",
+                                    "type": [
+                                        "string"
+                                    ]
                                 }
                             }
                         },
                         "kubevirtCloudControllerManager": {
-                            "type": "object",
+                            "description": "KubeVirt cloud controller manager configuration",
+                            "type": [
+                                "object"
+                            ],
                             "properties": {
                                 "enabled": {
                                     "description": "Enable kubevirt-cloud-controller-manager helm chart in k0s",
                                     "type": [
                                         "boolean"
+                                    ]
+                                },
+                                "name": {
+                                    "description": "Chart name",
+                                    "type": [
+                                        "string"
+                                    ]
+                                },
+                                "replicas": {
+                                    "description": "Number of replicas for cloud controller manager",
+                                    "type": [
+                                        "integer"
+                                    ],
+                                    "minimum": 1
+                                },
+                                "repo": {
+                                    "description": "Chart repository",
+                                    "type": [
+                                        "string"
+                                    ]
+                                },
+                                "tag": {
+                                    "description": "Image tag for kubevirt-cloud-controller-manager, if empty uses chart default",
+                                    "type": [
+                                        "string"
+                                    ]
+                                },
+                                "topologySpreadConstraints": {
+                                    "description": "Topology spread constraints for cloud controller manager",
+                                    "type": [
+                                        "array"
+                                    ],
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "labelSelector": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "matchLabels": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "k8s-app": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "matchLabelKeys": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "maxSkew": {
+                                                "type": "integer"
+                                            },
+                                            "topologyKey": {
+                                                "type": "string"
+                                            },
+                                            "whenUnsatisfiable": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                },
+                                "version": {
+                                    "description": "Chart version for kubevirt-cloud-controller-manager",
+                                    "type": [
+                                        "string"
                                     ]
                                 }
                             }
@@ -340,153 +490,23 @@
                 }
             }
         },
-        "kubevirtCsiDriver": {
-            "type": "object",
-            "properties": {
-                "csiAttacher": {
-                    "type": "object",
-                    "properties": {
-                        "name": {
-                            "type": "string"
-                        },
-                        "repo": {
-                            "type": "string"
-                        },
-                        "tag": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "csiDriver": {
-                    "type": "object",
-                    "properties": {
-                        "name": {
-                            "type": "string"
-                        },
-                        "repo": {
-                            "type": "string"
-                        },
-                        "tag": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "csiLivenessProbe": {
-                    "type": "object",
-                    "properties": {
-                        "name": {
-                            "type": "string"
-                        },
-                        "repo": {
-                            "type": "string"
-                        },
-                        "tag": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "csiProvisioner": {
-                    "type": "object",
-                    "properties": {
-                        "name": {
-                            "type": "string"
-                        },
-                        "repo": {
-                            "type": "string"
-                        },
-                        "tag": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "csiResizer": {
-                    "type": "object",
-                    "properties": {
-                        "name": {
-                            "type": "string"
-                        },
-                        "repo": {
-                            "type": "string"
-                        },
-                        "tag": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "csiSnapshotter": {
-                    "type": "object",
-                    "properties": {
-                        "name": {
-                            "type": "string"
-                        },
-                        "repo": {
-                            "type": "string"
-                        },
-                        "tag": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "infraStorageClassName": {
-                    "type": "string"
-                },
-                "nodeSelector": {
-                    "type": "object",
-                    "properties": {
-                        "node-role.kubernetes.io/control-plane": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "replicas": {
-                    "type": "integer"
-                },
-                "topologySpreadConstraints": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "labelSelector": {
-                                "type": "object",
-                                "properties": {
-                                    "matchLabels": {
-                                        "type": "object",
-                                        "properties": {
-                                            "k8s-app": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            "matchLabelKeys": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            },
-                            "maxSkew": {
-                                "type": "integer"
-                            },
-                            "topologyKey": {
-                                "type": "string"
-                            },
-                            "whenUnsatisfiable": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "machineHealthCheck": {
-            "type": "object",
+            "description": "Machine health check configuration",
+            "type": [
+                "object"
+            ],
             "properties": {
                 "enabled": {
-                    "type": "boolean"
+                    "description": "Enable machine health checks",
+                    "type": [
+                        "boolean"
+                    ]
                 },
                 "maxUnhealthy": {
-                    "type": "string"
+                    "description": "Maximum unhealthy machines threshold",
+                    "type": [
+                        "string"
+                    ]
                 }
             }
         },
@@ -712,7 +732,16 @@
                     }
                 },
                 "runStrategy": {
-                    "type": "string"
+                    "description": "VM run strategy (Always, Once, Manual, Halted)",
+                    "type": [
+                        "string"
+                    ],
+                    "enum": [
+                        "Always",
+                        "Once",
+                        "Manual",
+                        "Halted"
+                    ]
                 }
             }
         },

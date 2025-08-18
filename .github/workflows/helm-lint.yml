@@ -44,6 +44,10 @@ jobs:
         with:
           version: 'latest'
 
+      - name: Login to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+
       - name: Update chart dependencies
         run: |
           echo "Updating dependencies for chart: ${{ matrix.chart }}"

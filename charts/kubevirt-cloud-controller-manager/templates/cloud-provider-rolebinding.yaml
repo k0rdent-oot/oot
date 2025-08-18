@@ -8,5 +8,5 @@ roleRef:
   kind: Role
   name: kccm-{{ .Release.Name }}
 subjects:
-- kind: ServiceAccount
-  name: kccm-{{ .Release.Name }}
+  - kind: ServiceAccount
+    name: kccm-{{ .Release.Name }}

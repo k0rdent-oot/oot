@@ -5,4 +5,4 @@ metadata:
   labels:
     kubevirt.io: ""
     pod-security.kubernetes.io/enforce: "privileged"
-  name: {{.Values.kubevirt.namespace}}
+  name: {{ .Values.kubevirt.namespace }}

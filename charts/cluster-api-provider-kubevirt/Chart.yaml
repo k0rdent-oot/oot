@@ -2,7 +2,7 @@ apiVersion: v2
 name: cluster-api-provider-kubevirt
 description: A Helm chart for Cluster API provider KubeVirt
 type: application
-version: 1.0.0
+version: 1.5.0
 appVersion: "0.1.10"
 annotations:
   cluster.x-k8s.io/provider: infrastructure-kubevirt

@@ -8,8 +8,8 @@ spec:
   replicas: {{ .Values.controlPlaneNumber }}
   version: {{ .Values.k0s.version }}
   k0sConfigSpec:
-    {{- if $global.k0sURL }}
-    downloadURL: "{{ $global.k0sURL }}/k0s-{{ .Values.k0s.version }}-amd64"
+    {{- if .Values.k0s.downloadURL }}
+    downloadURL: "{{ .Values.k0s.downloadURL }}"
     {{- end }}
     args:
       - --enable-worker
@@ -93,55 +93,59 @@ spec:
             {{- if .Values.k0s.helmCharts.kubernetesCSIExternalSnapshotter.enabled }}
             - name: kubernetes-csi-external-snapshotter
               {{- if $global.registry }}
-              chartname: oci://{{ $global.registry }}/k0rdent-oot/oot/charts/kubernetes-csi-external-snapshotter
+              chartname: oci://{{ $global.registry }}/{{ .Values.k0s.helmCharts.kubernetesCSIExternalSnapshotter.name }}
               {{- else }}
-              chartname: oci://ghcr.io/k0rdent-oot/oot/charts/kubernetes-csi-external-snapshotter
+              chartname: oci://{{ .Values.k0s.helmCharts.kubernetesCSIExternalSnapshotter.repo }}/{{ .Values.k0s.helmCharts.kubernetesCSIExternalSnapshotter.name }}
               {{- end }}
-              version: v8.2.0
+              version: {{ .Values.k0s.helmCharts.kubernetesCSIExternalSnapshotter.version }}
               order: 1
               namespace: kube-system
-              {{- if $global.registry }}
+              {{- if or .Values.k0s.helmCharts.kubernetesCSIExternalSnapshotter.image.repository $global.registry }}
               values: |
                 image:
-                  repository: {{ $global.registry }}/sig-storage/snapshot-controller
+                  repository: {{ .Values.k0s.helmCharts.kubernetesCSIExternalSnapshotter.image.repository | default (printf "%s/sig-storage/snapshot-controller" $global.registry) }}
               {{- end }}
             {{- end }}
             {{- if .Values.k0s.helmCharts.kubevirtCSIDriverTenant.enabled }}
             - name: kubevirt-csi-driver-tenant
               {{- if $global.registry }}
-              chartname: oci://{{ $global.registry }}/k0rdent-oot/oot/charts/kubevirt-csi-driver-tenant
+              chartname: oci://{{ $global.registry }}/{{ .Values.k0s.helmCharts.kubevirtCSIDriverTenant.name }}
               {{- else }}
-              chartname: oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt-csi-driver-tenant
+              chartname: oci://{{ .Values.k0s.helmCharts.kubevirtCSIDriverTenant.repo }}/{{ .Values.k0s.helmCharts.kubevirtCSIDriverTenant.name }}
               {{- end }}
-              version: 0.1.0
+              version: {{ .Values.k0s.helmCharts.kubevirtCSIDriverTenant.version }}
               order: 2
               namespace: kube-system
               values: |
                 infraClusterNamespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
                 infraClusterLabels: csi-driver/cluster={{ .Release.Name }}
                 infraStorageClassName: {{ .Values.infraStorageClassName }}
-              {{- if $global.registry }}
+              {{- if or .Values.k0s.helmCharts.kubevirtCSIDriverTenant.images.csiDriver.repo .Values.k0s.helmCharts.kubevirtCSIDriverTenant.images.csiNodeDriverRegistrar.repo .Values.k0s.helmCharts.kubevirtCSIDriverTenant.images.csiLivenessProbe.repo $global.registry }}
                 csiDriver:
-                  repo: {{ $global.registry }}/kubevirt
+                  repo: {{ .Values.k0s.helmCharts.kubevirtCSIDriverTenant.images.csiDriver.repo | default (printf "%s/kubevirt" $global.registry) }}
                 csiNodeDriverRegistrar:
-                  repo: {{ $global.registry }}/sig-storage
+                  repo: {{ .Values.k0s.helmCharts.kubevirtCSIDriverTenant.images.csiNodeDriverRegistrar.repo | default (printf "%s/sig-storage" $global.registry) }}
                 csiLivenessProbe:
-                  repo: {{ $global.registry }}/sig-storage
+                  repo: {{ .Values.k0s.helmCharts.kubevirtCSIDriverTenant.images.csiLivenessProbe.repo | default (printf "%s/sig-storage" $global.registry) }}
               {{- end }}
             {{- end }}
             {{- if .Values.k0s.helmCharts.kubevirtCloudControllerManager.enabled }}
             - name: kubevirt-cloud-controller-manager
-              chartname: oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt-cloud-controller-manager
-              version: 1.2.6
+              {{- if $global.registry }}
+              chartname: oci://{{ $global.registry }}/{{ .Values.k0s.helmCharts.kubevirtCloudControllerManager.name }}
+              {{- else }}
+              chartname: oci://{{ .Values.k0s.helmCharts.kubevirtCloudControllerManager.repo }}/{{ .Values.k0s.helmCharts.kubevirtCloudControllerManager.name }}
+              {{- end }}
+              version: {{ .Values.k0s.helmCharts.kubevirtCloudControllerManager.version }}
               order: 3
               namespace: kube-system
               values: |
-                replicas: {{ .Values.cloudControllerManager.replicas }}
-                repo: {{ .Values.cloudControllerManager.repo }}
-                name: {{ .Values.cloudControllerManager.name }}
-                tag: {{ .Values.cloudControllerManager.tag }}
+                replicas: {{ .Values.k0s.helmCharts.kubevirtCloudControllerManager.replicas }}
+                repo: {{ .Values.k0s.helmCharts.kubevirtCloudControllerManager.repo }}
+                name: {{ .Values.k0s.helmCharts.kubevirtCloudControllerManager.name }}
+                tag: {{ .Values.k0s.helmCharts.kubevirtCloudControllerManager.tag }}
                 topologySpreadConstraints:
-                {{- toYaml .Values.cloudControllerManager.topologySpreadConstraints | nindent 18 }}
+                {{- toYaml .Values.k0s.helmCharts.kubevirtCloudControllerManager.topologySpreadConstraints | nindent 18 }}
             {{- end }}
         {{- end }}
   machineTemplate:

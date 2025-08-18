@@ -2,18 +2,18 @@ apiVersion: v2
 name: kubevirt-pp
 description: A KubeVirt Pluggable provider Helm chart
 type: application
-version: 1.0.0
+version: 1.5.0
 appVersion: 1.0.0
 dependencies:
   - name: kubevirt
-    version: ">=0.4.0"
+    version: ">=1.5.0"
     repository: "oci://ghcr.io/k0rdent-oot/oot/charts"
     condition: kubevirt.enabled
   - name: kubevirt-cloud-controller-manager
-    version: ">=1.2.6"
+    version: ">=1.5.0"
     repository: "oci://ghcr.io/k0rdent-oot/oot/charts"
     condition: kubevirtCloudControllerManager.enabled
   - name: kubevirt-csi-driver
-    version: ">=1.0.0"
+    version: ">=1.5.0"
     repository: "oci://ghcr.io/k0rdent-oot/oot/charts"
     condition: kubevirtCsiDriver.enabled

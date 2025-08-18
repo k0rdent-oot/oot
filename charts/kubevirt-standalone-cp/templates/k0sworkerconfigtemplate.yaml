@@ -7,8 +7,8 @@ metadata:
 spec:
   template:
     spec:
-      {{- if $global.k0sURL }}
-      downloadURL: "{{ $global.k0sURL }}/k0s-{{ .Values.k0s.version }}-amd64"
+      {{- if .Values.k0s.downloadURL }}
+      downloadURL: "{{ .Values.k0s.downloadURL }}"
       {{- end }}
       version: {{ .Values.k0s.version }}
       args:
