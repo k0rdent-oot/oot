@@ -1,19 +1,20 @@
+{{- $global := .Values.global | default dict }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    k8s-app: kubevirt-ccm-{{ .Release.Name }}
-  name: kubevirt-ccm-{{ .Release.Name }}
+    k8s-app: kccm-{{ .Release.Name }}
+  name: kccm-{{ .Release.Name }}
   namespace: {{ .Release.Namespace | trunc 63 }}
 spec:
   replicas: {{ .Values.cloudControllerManager.replicas }}
   selector:
     matchLabels:
-      k8s-app: kubevirt-ccm-{{ .Release.Name }}
+      k8s-app: kccm-{{ .Release.Name }}
   template:
     metadata:
       labels:
-        k8s-app: kubevirt-ccm-{{ .Release.Name }}
+        k8s-app: kccm-{{ .Release.Name }}
     spec:
       containers:
       - args:
@@ -24,9 +25,13 @@ spec:
         - --cluster-name={{ .Release.Name }}
         command:
         - /bin/kubevirt-cloud-controller-manager
+        {{- if $global.registry }}
+        image: {{ $global.registry }}/{{ .Values.cloudControllerManager.name }}:{{ .Values.cloudControllerManager.tag }}
+        {{- else }}
         image: {{ .Values.cloudControllerManager.repo }}/{{ .Values.cloudControllerManager.name }}:{{ .Values.cloudControllerManager.tag }}
+        {{- end }}
         imagePullPolicy: IfNotPresent
-        name: kubevirt-cloud-controller-manager
+        name: kccm
         resources:
           requests:
             cpu: 100m
@@ -39,7 +44,7 @@ spec:
         - mountPath: /etc/cloud
           name: cloud-config
           readOnly: true
-      serviceAccountName: cloud-controller-manager-{{ .Release.Name }}
+      serviceAccountName: kccm-{{ .Release.Name }}
       {{- if .Values.cloudControllerManager.topologySpreadConstraints }}
       topologySpreadConstraints: {{ tpl (toYaml .Values.cloudControllerManager.topologySpreadConstraints) $ | nindent 6 }}
       {{- end }}
@@ -51,6 +56,8 @@ spec:
         key: node-role.kubernetes.io/control-plane
       - effect: NoSchedule
         key: node.kubernetes.io/not-ready
+      - effect: NoSchedule
+        key: node.kubernetes.io/unreachable
       volumes:
       - configMap:
           name: cloud-config-{{ .Release.Name }}

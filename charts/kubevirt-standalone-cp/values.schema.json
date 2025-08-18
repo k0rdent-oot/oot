@@ -214,6 +214,13 @@
                         "boolean"
                     ]
                 },
+                "nodeSelector": {
+                    "description": "Node selector for VM placement",
+                    "type": [
+                        "object"
+                    ],
+                    "additionalProperties": true
+                },
                 "preStartCommands": {
                     "description": "Commands to run before starting K0s service",
                     "type": [

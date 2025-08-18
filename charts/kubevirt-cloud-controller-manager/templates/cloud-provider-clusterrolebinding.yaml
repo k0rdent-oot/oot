@@ -8,5 +8,5 @@ roleRef:
   name: kccm-{{ .Release.Namespace | trunc 63 }}-{{ .Release.Name }}
 subjects:
 - kind: ServiceAccount
-  name: cloud-controller-manager-{{ .Release.Name }}
+  name: kccm-{{ .Release.Name }}
   namespace: {{ .Release.Namespace | trunc 63 }}

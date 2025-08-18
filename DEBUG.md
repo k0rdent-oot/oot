@@ -23,4 +23,4 @@ helm template test oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt --version 1.0.0
 
 Use `https://github.com/losisin/helm-values-schema-json` to (re)generate schemas manually.
 
-Inside chart folder run `helm schema -input values.yaml`, see example [valules.yaml](https://github.com/k0rdent/kcm/blob/main/templates/cluster/gcp-standalone-cp/values.yaml)
+Inside chart folder run `helm-values-schema-json -input values.yaml -output values.schema.json`, see example [values.yaml](https://github.com/k0rdent/kcm/blob/main/templates/cluster/gcp-standalone-cp/values.yaml)

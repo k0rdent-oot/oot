@@ -9,4 +9,4 @@ roleRef:
   name: kccm-{{ .Release.Name }}
 subjects:
 - kind: ServiceAccount
-  name: cloud-controller-manager-{{ .Release.Name }}
+  name: kccm-{{ .Release.Name }}

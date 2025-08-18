@@ -9,5 +9,5 @@ roleRef:
   name: extension-apiserver-authentication-reader
 subjects:
 - kind: ServiceAccount
-  name: cloud-controller-manager-{{ .Release.Name }}
+  name: kccm-{{ .Release.Name }}
   namespace: {{ .Release.Namespace | trunc 63 }}

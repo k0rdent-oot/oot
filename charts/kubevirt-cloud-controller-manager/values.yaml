@@ -9,7 +9,7 @@ cloudControllerManager:
   topologySpreadConstraints:
     - labelSelector:
         matchLabels:
-          k8s-app: kubevirt-ccm-{{ .Release.Name }}
+          k8s-app: kccm-{{ .Release.Name }}
       matchLabelKeys:
         - pod-template-hash
       topologyKey: topology.kubernetes.io/zone
