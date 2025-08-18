@@ -9,5 +9,8 @@ kubevirt:
 kubevirtCloudControllerManager:
   enabled: false
 
+kubevirtCsiDriver:
+  enabled: false
+
 config: # @schema description: Configuration settings; type: object
   namespace: "" # @schema description: Namespace for objects; type: string

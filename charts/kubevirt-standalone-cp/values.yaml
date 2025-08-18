@@ -185,6 +185,9 @@ k0s: # @schema description: K0s parameters; type: object
     kubevirtCloudControllerManager:
       enabled: false # @schema description: Enable kubevirt-cloud-controller-manager helm chart in k0s; type: boolean
 
+# CSI Driver configuration for k0s helm chart
+infraStorageClassName: "standard" # @schema description: Infrastructure storage class name for CSI driver; type: string
+
 cloudControllerManager:
   replicas: 1
   repo: quay.io/kubevirt
@@ -200,44 +203,6 @@ cloudControllerManager:
       maxSkew: 1
       whenUnsatisfiable: ScheduleAnyway
 
-kubevirtCsiDriver:
-  replicas: 1
-  infraStorageClassName: "standard" # change with storage class of Mothership
-  csiDriver:
-    repo: quay.io/kubevirt
-    name: kcsi-driver
-    tag: latest
-  csiProvisioner:
-    repo: k8s.gcr.io/sig-storage
-    name: csi-provisioner
-    tag: v5.1.0
-  csiAttacher:
-    repo: k8s.gcr.io/sig-storage
-    name: csi-attacher
-    tag: v4.4.3
-  csiLivenessProbe:
-    repo: k8s.gcr.io/sig-storage
-    name: livenessprobe
-    tag: v2.12.0
-  csiSnapshotter:
-    repo: k8s.gcr.io/sig-storage
-    name: csi-snapshotter
-    tag: v7.0.2
-  csiResizer:
-    repo: k8s.gcr.io/sig-storage
-    name: csi-resizer
-    tag: v1.13.1
-  nodeSelector:
-    node-role.kubernetes.io/control-plane: "true"
-  topologySpreadConstraints:
-    - labelSelector:
-        matchLabels:
-          k8s-app: kcsi-driver-{{ .Release.Name }}
-      matchLabelKeys:
-        - pod-template-hash
-      topologyKey: topology.kubernetes.io/zone
-      maxSkew: 1
-      whenUnsatisfiable: ScheduleAnyway
 
 machineHealthCheck:
   enabled: false

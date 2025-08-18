@@ -1,0 +1,43 @@
+# @schema title: KubeVirt CSI Driver Configuration
+# @schema description: Configuration for KubeVirt CSI Driver deployment
+
+cluster: {} # @schema description: Basic cluster information; type: object
+
+kubevirtCsiDriver:
+  replicas: 1
+  infraStorageClassName: "standard" # @schema description: Infrastructure storage class name; type: string
+  csiDriver:
+    repo: quay.io/kubevirt
+    name: kcsi-driver
+    tag: latest
+  csiProvisioner:
+    repo: k8s.gcr.io/sig-storage
+    name: csi-provisioner
+    tag: v5.1.0
+  csiAttacher:
+    repo: k8s.gcr.io/sig-storage
+    name: csi-attacher
+    tag: v4.4.3
+  csiLivenessProbe:
+    repo: k8s.gcr.io/sig-storage
+    name: livenessprobe
+    tag: v2.12.0
+  csiSnapshotter:
+    repo: k8s.gcr.io/sig-storage
+    name: csi-snapshotter
+    tag: v7.0.2
+  csiResizer:
+    repo: k8s.gcr.io/sig-storage
+    name: csi-resizer
+    tag: v1.13.1
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: "true"
+  topologySpreadConstraints:
+    - labelSelector:
+        matchLabels:
+          k8s-app: kcsi-driver-{{ .Release.Name }}
+      matchLabelKeys:
+        - pod-template-hash
+      topologyKey: topology.kubernetes.io/zone
+      maxSkew: 1
+      whenUnsatisfiable: ScheduleAnyway

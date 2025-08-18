@@ -119,7 +119,7 @@ spec:
               values: |
                 infraClusterNamespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
                 infraClusterLabels: csi-driver/cluster={{ .Release.Name }}
-                infraStorageClassName: {{ .Values.kubevirtCsiDriver.infraStorageClassName }}
+                infraStorageClassName: {{ .Values.infraStorageClassName }}
               {{- if $global.registry }}
                 csiDriver:
                   repo: {{ $global.registry }}/kubevirt

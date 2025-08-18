@@ -1,0 +1,7 @@
+apiVersion: v2
+name: kubevirt-csi-driver
+description: |
+  Helm chart for deploying KubeVirt CSI Driver.
+type: application
+version: 1.0.0
+appVersion: "latest"

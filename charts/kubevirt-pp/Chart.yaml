@@ -13,3 +13,7 @@ dependencies:
     version: ">=1.2.6"
     repository: "oci://ghcr.io/k0rdent-oot/oot/charts"
     condition: kubevirtCloudControllerManager.enabled
+  - name: kubevirt-csi-driver
+    version: ">=1.0.0"
+    repository: "oci://ghcr.io/k0rdent-oot/oot/charts"
+    condition: kubevirtCsiDriver.enabled
