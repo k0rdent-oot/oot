@@ -1,27 +1,27 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
     "properties": {
         "kubevirt": {
+            "type": "object",
             "properties": {
                 "certificateRotateStrategy": {
-                    "properties": {},
                     "type": "object"
                 },
                 "configuration": {
+                    "type": "object",
                     "properties": {
                         "developerConfiguration": {
+                            "type": "object",
                             "properties": {
                                 "featureGates": {
                                     "type": "array"
                                 }
-                            },
-                            "type": "object"
+                            }
                         }
-                    },
-                    "type": "object"
+                    }
                 },
                 "customizeComponents": {
-                    "properties": {},
                     "type": "object"
                 },
                 "imagePullPolicy": {
@@ -30,13 +30,102 @@
                 "namespace": {
                     "type": "string"
                 },
+                "virtOperator": {
+                    "type": "object",
+                    "properties": {
+                        "annotations": {
+                            "type": "object",
+                            "properties": {
+                                "openshift.io/required-scc": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "args": {
+                            "type": "object",
+                            "properties": {
+                                "port": {
+                                    "type": "string"
+                                },
+                                "verbosity": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "env": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "value": {
+                                        "type": "string"
+                                    },
+                                    "valueFrom": {
+                                        "type": "object",
+                                        "properties": {
+                                            "fieldRef": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "fieldPath": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "image": {
+                            "type": "object",
+                            "properties": {
+                                "pullPolicy": {
+                                    "type": "string"
+                                },
+                                "repository": {
+                                    "type": "string"
+                                },
+                                "tag": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "replicas": {
+                            "type": "integer"
+                        },
+                        "resources": {
+                            "type": "object",
+                            "properties": {
+                                "requests": {
+                                    "type": "object",
+                                    "properties": {
+                                        "cpu": {
+                                            "type": "string"
+                                        },
+                                        "memory": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "strategy": {
+                            "type": "object",
+                            "properties": {
+                                "type": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
                 "workloadUpdateStrategy": {
-                    "properties": {},
                     "type": "object"
                 }
-            },
-            "type": "object"
+            }
         }
-    },
-    "type": "object"
+    }
 }

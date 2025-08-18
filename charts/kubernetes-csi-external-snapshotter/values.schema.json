@@ -2,22 +2,22 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
-        "configSecret": {
+        "image": {
             "type": "object",
             "properties": {
-                "create": {
-                    "type": "boolean"
-                },
-                "name": {
+                "pullPolicy": {
                     "type": "string"
                 },
-                "namespace": {
+                "repository": {
+                    "type": "string"
+                },
+                "tag": {
                     "type": "string"
                 }
             }
         },
-        "manager": {
-            "type": "object"
+        "replicaCount": {
+            "type": "integer"
         }
     }
 }

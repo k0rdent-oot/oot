@@ -1,0 +1,63 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "config": {
+            "description": "Configuration settings",
+            "type": [
+                "object"
+            ],
+            "properties": {
+                "namespace": {
+                    "description": "Namespace for objects",
+                    "type": [
+                        "string"
+                    ]
+                }
+            }
+        },
+        "kubevirt": {
+            "type": "object",
+            "properties": {
+                "configuration": {
+                    "type": "object",
+                    "properties": {
+                        "developerConfiguration": {
+                            "type": "object",
+                            "properties": {
+                                "featureGates": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "namespace": {
+                    "type": "string"
+                }
+            }
+        },
+        "kubevirtCloudControllerManager": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "kubevirtCsiDriver": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        }
+    }
+}
