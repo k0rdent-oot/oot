@@ -6,3 +6,4 @@ This repository contains out-of-tree Helm chart(s) for [k0rdent/kcm](https://doc
 
 - [KubeVirt](/KUBEVIRT.md)
 - [Hetzner](/HETZNER.md)
+- [Nutanix](/NUTANIX.md)
