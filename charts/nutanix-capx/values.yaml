@@ -15,9 +15,10 @@ nutanix: # @schema description: Nutanix Prism Central and cluster configuration;
     # if set, create/expect a per-cluster Secret and wire via credentialRef
     usePerClusterCredential: false # @schema description: Use per-cluster credentials instead of global; type: boolean
     credentialSecretName: "" # @schema description: Name of the credential secret (when usePerClusterCredential is true); type: string
+    additionalTrustBundleConfigMapName: "" # @schema description: Name of ConfigMap containing additional CA certificates; type: string
 
   controlPlaneEndpoint: # @schema description: Control plane endpoint configuration; type: object
-    host: "" # @schema description: VIP or static IP for control plane endpoint; type: string
+    host: "" # @schema description: VIP or static IP for control plane endpoint (must be outside DHCP/IPAM range); type: string
     port: 6443 # @schema description: Control plane endpoint port; type: number; minimum: 1; maximum: 65535
 
 # Default machine settings for both control plane and workers
@@ -57,6 +58,7 @@ worker: # @schema description: Worker node specific machine configuration; type:
 # k0s configuration
 k0s: # @schema description: k0s configuration parameters; type: object
   version: v1.29.2+k0s.0 # @schema description: k0s version; type: string
+  args: [] # @schema description: Additional k0s args; type: array; items: string
   worker: # @schema description: Worker node k0s configuration; type: object
     labels: {} # @schema description: Labels to apply to worker nodes; type: object; additionalProperties: true
     taints: [] # @schema description: Taints to apply to worker nodes; type: array
@@ -70,12 +72,18 @@ clusterNetwork: # @schema description: Cluster network configuration; type: obje
     cidrBlocks: # @schema description: Service CIDR blocks; type: array; items: string
       - "10.95.0.0/16"
 
-# Mode enablement
-modes: # @schema description: Cluster mode configuration; type: object
+# Mode enablement (mutually exclusive)
+modes: # @schema description: Cluster mode configuration (choose one); type: object
   hcp: # @schema description: Hosted Control Plane mode configuration; type: object
     enabled: true # @schema description: Enable HCP mode templates; type: boolean
   standalone: # @schema description: Standalone mode configuration; type: object
-    enabled: true # @schema description: Enable standalone mode templates; type: boolean
+    enabled: false # @schema description: Enable standalone mode templates; type: boolean
+
+# ClusterClass naming
+class: # @schema description: ClusterClass configuration; type: object
+  name: # @schema description: ClusterClass names; type: object
+    hcp: "nutanix-k0s-hcp" # @schema description: HCP ClusterClass name; type: string
+    standalone: "nutanix-k0s-standalone" # @schema description: Standalone ClusterClass name; type: string
 
 # Cluster labels and annotations
 clusterLabels: {} # @schema description: Labels to apply to the cluster; type: object; additionalProperties: true

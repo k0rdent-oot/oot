@@ -1,0 +1,138 @@
+{{- if .Values.modes.hcp.enabled }}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: NutanixMachineTemplate
+metadata:
+  name: {{ include "nutanix-capx.hcp.workerMachineTemplateName" . }}
+  labels:
+    {{- include "nutanix-capx.labels" . | nindent 4 }}
+spec:
+  template:
+    spec:
+      image:
+        type: {{ .Values.machineDefaults.image.type | quote }}
+        {{- if eq .Values.machineDefaults.image.type "name" }}
+        name: {{ .Values.machineDefaults.image.name | quote }}
+        {{- else }}
+        uuid: {{ .Values.machineDefaults.image.uuid | quote }}
+        {{- end }}
+      cluster:
+        type: {{ .Values.machineDefaults.cluster.type | quote }}
+        {{- if eq .Values.machineDefaults.cluster.type "name" }}
+        name: {{ .Values.machineDefaults.cluster.name | quote }}
+        {{- else }}
+        uuid: {{ .Values.machineDefaults.cluster.uuid | quote }}
+        {{- end }}
+      subnets:
+      {{- range .Values.machineDefaults.subnets }}
+      - type: {{ .type | quote }}
+        {{- if eq .type "name" }}
+        name: {{ .name | quote }}
+        {{- else }}
+        uuid: {{ .uuid | quote }}
+        {{- end }}
+      {{- end }}
+      bootType: {{ .Values.machineDefaults.bootType | quote }}
+      vcpusPerSocket: {{ .Values.worker.vcpusPerSocket | default .Values.machineDefaults.vcpusPerSocket }}
+      vcpuSockets: {{ .Values.worker.vcpuSockets | default .Values.machineDefaults.vcpuSockets }}
+      memorySize: {{ .Values.worker.memorySize | default .Values.machineDefaults.memorySize | quote }}
+      systemDiskSize: {{ .Values.worker.systemDiskSize | default .Values.machineDefaults.systemDiskSize | quote }}
+      {{- if .Values.machineDefaults.project }}
+      project: {{ .Values.machineDefaults.project | quote }}
+      {{- end }}
+      {{- if .Values.machineDefaults.additionalCategories }}
+      additionalCategories: {{ .Values.machineDefaults.additionalCategories | toYaml | nindent 8 }}
+      {{- end }}
+{{- end }}
+
+{{- if .Values.modes.standalone.enabled }}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: NutanixMachineTemplate
+metadata:
+  name: {{ include "nutanix-capx.standalone.controlPlaneMachineTemplateName" . }}
+  labels:
+    {{- include "nutanix-capx.labels" . | nindent 4 }}
+spec:
+  template:
+    spec:
+      image:
+        type: {{ .Values.machineDefaults.image.type | quote }}
+        {{- if eq .Values.machineDefaults.image.type "name" }}
+        name: {{ .Values.machineDefaults.image.name | quote }}
+        {{- else }}
+        uuid: {{ .Values.machineDefaults.image.uuid | quote }}
+        {{- end }}
+      cluster:
+        type: {{ .Values.machineDefaults.cluster.type | quote }}
+        {{- if eq .Values.machineDefaults.cluster.type "name" }}
+        name: {{ .Values.machineDefaults.cluster.name | quote }}
+        {{- else }}
+        uuid: {{ .Values.machineDefaults.cluster.uuid | quote }}
+        {{- end }}
+      subnets:
+      {{- range .Values.machineDefaults.subnets }}
+      - type: {{ .type | quote }}
+        {{- if eq .type "name" }}
+        name: {{ .name | quote }}
+        {{- else }}
+        uuid: {{ .uuid | quote }}
+        {{- end }}
+      {{- end }}
+      bootType: {{ .Values.machineDefaults.bootType | quote }}
+      vcpusPerSocket: {{ .Values.controlPlane.vcpusPerSocket | default .Values.machineDefaults.vcpusPerSocket }}
+      vcpuSockets: {{ .Values.controlPlane.vcpuSockets | default .Values.machineDefaults.vcpuSockets }}
+      memorySize: {{ .Values.controlPlane.memorySize | default .Values.machineDefaults.memorySize | quote }}
+      systemDiskSize: {{ .Values.controlPlane.systemDiskSize | default .Values.machineDefaults.systemDiskSize | quote }}
+      {{- if .Values.machineDefaults.project }}
+      project: {{ .Values.machineDefaults.project | quote }}
+      {{- end }}
+      {{- if .Values.machineDefaults.additionalCategories }}
+      additionalCategories: {{ .Values.machineDefaults.additionalCategories | toYaml | nindent 8 }}
+      {{- end }}
+
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: NutanixMachineTemplate
+metadata:
+  name: {{ include "nutanix-capx.standalone.workerMachineTemplateName" . }}
+  labels:
+    {{- include "nutanix-capx.labels" . | nindent 4 }}
+spec:
+  template:
+    spec:
+      image:
+        type: {{ .Values.machineDefaults.image.type | quote }}
+        {{- if eq .Values.machineDefaults.image.type "name" }}
+        name: {{ .Values.machineDefaults.image.name | quote }}
+        {{- else }}
+        uuid: {{ .Values.machineDefaults.image.uuid | quote }}
+        {{- end }}
+      cluster:
+        type: {{ .Values.machineDefaults.cluster.type | quote }}
+        {{- if eq .Values.machineDefaults.cluster.type "name" }}
+        name: {{ .Values.machineDefaults.cluster.name | quote }}
+        {{- else }}
+        uuid: {{ .Values.machineDefaults.cluster.uuid | quote }}
+        {{- end }}
+      subnets:
+      {{- range .Values.machineDefaults.subnets }}
+      - type: {{ .type | quote }}
+        {{- if eq .type "name" }}
+        name: {{ .name | quote }}
+        {{- else }}
+        uuid: {{ .uuid | quote }}
+        {{- end }}
+      {{- end }}
+      bootType: {{ .Values.machineDefaults.bootType | quote }}
+      vcpusPerSocket: {{ .Values.worker.vcpusPerSocket | default .Values.machineDefaults.vcpusPerSocket }}
+      vcpuSockets: {{ .Values.worker.vcpuSockets | default .Values.machineDefaults.vcpuSockets }}
+      memorySize: {{ .Values.worker.memorySize | default .Values.machineDefaults.memorySize | quote }}
+      systemDiskSize: {{ .Values.worker.systemDiskSize | default .Values.machineDefaults.systemDiskSize | quote }}
+      {{- if .Values.machineDefaults.project }}
+      project: {{ .Values.machineDefaults.project | quote }}
+      {{- end }}
+      {{- if .Values.machineDefaults.additionalCategories }}
+      additionalCategories: {{ .Values.machineDefaults.additionalCategories | toYaml | nindent 8 }}
+      {{- end }}
+{{- end }}

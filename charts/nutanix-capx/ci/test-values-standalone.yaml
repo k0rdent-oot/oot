@@ -32,3 +32,8 @@ modes:
     enabled: false
   standalone:
     enabled: true
+
+class:
+  name:
+    hcp: "nutanix-k0s-hcp"
+    standalone: "nutanix-k0s-standalone"

@@ -5,6 +5,11 @@ templates:
   - templates/clusterclass-nutanix-k0s-hcp.yaml
   - templates/clusterclass-nutanix-k0s-standalone.yaml
   - templates/namespace-capx-system.yaml
+  - templates/k0smotron-controlplane-template.yaml
+  - templates/k0s-controlplane-template.yaml
+  - templates/k0s-worker-bootstrap-templates.yaml
+  - templates/nutanix-machine-templates.yaml
+  - templates/nutanix-cluster.yaml
 
 tests:
   - it: should create ProviderTemplate with correct metadata
@@ -48,11 +53,16 @@ tests:
       - isKind:
           of: ClusterClass
       - equal:
+          path: apiVersion
+          value: cluster.x-k8s.io/v1beta2
+      - equal:
           path: metadata.name
           value: nutanix-k0s-hcp
       - equal:
-          path: spec.controlPlane.ref.kind
-          value: K0smotronControlPlane
+          path: spec.controlPlane.templateRef.kind
+          value: K0smotronControlPlaneTemplate
+      - isNull:
+          path: spec.controlPlane.machineInfrastructure
 
   - it: should not create HCP ClusterClass when disabled
     template: templates/clusterclass-nutanix-k0s-hcp.yaml
@@ -70,11 +80,17 @@ tests:
       - isKind:
           of: ClusterClass
       - equal:
+          path: apiVersion
+          value: cluster.x-k8s.io/v1beta2
+      - equal:
           path: metadata.name
           value: nutanix-k0s-standalone
       - equal:
-          path: spec.controlPlane.ref.kind
-          value: K0sControlPlane
+          path: spec.controlPlane.templateRef.kind
+          value: K0sControlPlaneTemplate
+      - equal:
+          path: spec.controlPlane.machineInfrastructure.templateRef.kind
+          value: NutanixMachineTemplate
 
   - it: should not create Standalone ClusterClass when disabled
     template: templates/clusterclass-nutanix-k0s-standalone.yaml
@@ -155,3 +171,66 @@ tests:
       - equal:
           path: metadata.name
           value: custom-capx-ns
+
+  - it: should create K0smotronControlPlaneTemplate in HCP mode
+    template: templates/k0smotron-controlplane-template.yaml
+    set:
+      modes.hcp.enabled: true
+    asserts:
+      - isKind:
+          of: K0smotronControlPlaneTemplate
+      - equal:
+          path: spec.template.spec.version
+          value: v1.29.2+k0s.0
+
+  - it: should create K0sControlPlaneTemplate in Standalone mode
+    template: templates/k0s-controlplane-template.yaml
+    set:
+      modes.standalone.enabled: true
+    asserts:
+      - isKind:
+          of: K0sControlPlaneTemplate
+      - equal:
+          path: spec.template.spec.version
+          value: v1.29.2+k0s.0
+
+  - it: should create NutanixCluster template
+    template: templates/nutanix-cluster.yaml
+    set:
+      modes.hcp.enabled: true
+      nutanix.prismCentral.address: "10.1.1.100"
+      nutanix.controlPlaneEndpoint.host: "10.1.1.200"
+    asserts:
+      - isKind:
+          of: NutanixCluster
+      - equal:
+          path: spec.prismCentral.address
+          value: "10.1.1.100"
+      - equal:
+          path: spec.controlPlaneEndpoint.host
+          value: "10.1.1.200"
+
+  - it: should create NutanixMachineTemplate for workers in HCP mode
+    template: templates/nutanix-machine-templates.yaml
+    set:
+      modes.hcp.enabled: true
+      machineDefaults.image.name: "test-image"
+      machineDefaults.cluster.name: "test-cluster"
+      machineDefaults.subnets[0].name: "test-subnet"
+    asserts:
+      - isKind:
+          of: NutanixMachineTemplate
+      - equal:
+          path: spec.template.spec.image.name
+          value: "test-image"
+
+  - it: should create K0sWorkerConfigTemplate in HCP mode
+    template: templates/k0s-worker-bootstrap-templates.yaml
+    set:
+      modes.hcp.enabled: true
+    asserts:
+      - isKind:
+          of: K0sWorkerConfigTemplate
+      - equal:
+          path: spec.template.spec.version
+          value: v1.29.2+k0s.0

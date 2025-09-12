@@ -36,11 +36,11 @@ jobs:
         run: |
           mkdir -p crds/
           
-          # CAPI Core CRDs
-          curl -s https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/v1.7.4/config/crd/bases/cluster.x-k8s.io_clusters.yaml > crds/cluster.x-k8s.io_clusters.yaml
-          curl -s https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/v1.7.4/config/crd/bases/cluster.x-k8s.io_clusterclasses.yaml > crds/cluster.x-k8s.io_clusterclasses.yaml
-          curl -s https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/v1.7.4/config/crd/bases/cluster.x-k8s.io_machinedeployments.yaml > crds/cluster.x-k8s.io_machinedeployments.yaml
-          curl -s https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/v1.7.4/config/crd/bases/cluster.x-k8s.io_machines.yaml > crds/cluster.x-k8s.io_machines.yaml
+          # CAPI Core CRDs (v1.8.x for v1beta2 support)
+          curl -s https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/v1.8.4/config/crd/bases/cluster.x-k8s.io_clusters.yaml > crds/cluster.x-k8s.io_clusters.yaml
+          curl -s https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/v1.8.4/config/crd/bases/cluster.x-k8s.io_clusterclasses.yaml > crds/cluster.x-k8s.io_clusterclasses.yaml
+          curl -s https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/v1.8.4/config/crd/bases/cluster.x-k8s.io_machinedeployments.yaml > crds/cluster.x-k8s.io_machinedeployments.yaml
+          curl -s https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/v1.8.4/config/crd/bases/cluster.x-k8s.io_machines.yaml > crds/cluster.x-k8s.io_machines.yaml
           
           # CAPX CRDs (approximate - using latest available)
           curl -s https://raw.githubusercontent.com/nutanix-cloud-native/cluster-api-provider-nutanix/v1.7.0/config/crd/bases/infrastructure.cluster.x-k8s.io_nutanixclusters.yaml > crds/infrastructure.cluster.x-k8s.io_nutanixclusters.yaml
@@ -115,13 +115,23 @@ jobs:
       - name: Check expected resources exist
         run: |
           echo "Checking HCP mode resources..."
+          grep -q "apiVersion: cluster.x-k8s.io/v1beta2" hcp-output.yaml
           grep -q "kind: ClusterClass" hcp-output.yaml && grep -q "nutanix-k0s-hcp" hcp-output.yaml
+          grep -q "kind: K0smotronControlPlaneTemplate" hcp-output.yaml
+          grep -q "kind: K0sWorkerConfigTemplate" hcp-output.yaml
+          grep -q "kind: NutanixMachineTemplate" hcp-output.yaml
+          grep -q "kind: NutanixCluster" hcp-output.yaml
           grep -q "kind: ProviderTemplate" hcp-output.yaml
           grep -q "kind: ProviderInterface" hcp-output.yaml
           grep -q "kind: Namespace" hcp-output.yaml
           
           echo "Checking Standalone mode resources..."
+          grep -q "apiVersion: cluster.x-k8s.io/v1beta2" standalone-output.yaml
           grep -q "kind: ClusterClass" standalone-output.yaml && grep -q "nutanix-k0s-standalone" standalone-output.yaml
+          grep -q "kind: K0sControlPlaneTemplate" standalone-output.yaml
+          grep -q "kind: K0sWorkerConfigTemplate" standalone-output.yaml
+          grep -q "kind: NutanixMachineTemplate" standalone-output.yaml
+          grep -q "kind: NutanixCluster" standalone-output.yaml
           grep -q "kind: ProviderTemplate" standalone-output.yaml
           grep -q "kind: ProviderInterface" standalone-output.yaml
           grep -q "kind: Namespace" standalone-output.yaml
@@ -129,6 +139,16 @@ jobs:
           echo "Checking both modes resources..."
           grep -q "nutanix-k0s-hcp" both-modes-output.yaml
           grep -q "nutanix-k0s-standalone" both-modes-output.yaml
+          
+          echo "Checking templateRef usage (not ref)..."
+          grep -q "templateRef:" hcp-output.yaml
+          grep -q "templateRef:" standalone-output.yaml
+          
+          echo "Checking HCP has no machineInfrastructure on control plane..."
+          ! grep -A5 "controlPlane:" hcp-output.yaml | grep -q "machineInfrastructure"
+          
+          echo "Checking Standalone has machineInfrastructure on control plane..."
+          grep -A10 "controlPlane:" standalone-output.yaml | grep -q "machineInfrastructure"
 
       - name: Validate cluster examples
         run: |

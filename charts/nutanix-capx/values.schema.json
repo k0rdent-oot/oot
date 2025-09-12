@@ -43,6 +43,10 @@
             "credentialSecretName": {
               "type": "string",
               "description": "Name of the credential secret"
+            },
+            "additionalTrustBundleConfigMapName": {
+              "type": "string",
+              "description": "Name of ConfigMap containing additional CA certificates"
             }
           }
         },
@@ -179,6 +183,12 @@
         "version": {
           "type": "string"
         },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "worker": {
           "type": "object",
           "properties": {
@@ -252,6 +262,60 @@
           "properties": {
             "enabled": {
               "type": "boolean"
+            }
+          }
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "hcp": {
+              "properties": {
+                "enabled": {
+                  "const": true
+                }
+              }
+            },
+            "standalone": {
+              "properties": {
+                "enabled": {
+                  "const": false
+                }
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "hcp": {
+              "properties": {
+                "enabled": {
+                  "const": false
+                }
+              }
+            },
+            "standalone": {
+              "properties": {
+                "enabled": {
+                  "const": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "class": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "object",
+          "properties": {
+            "hcp": {
+              "type": "string"
+            },
+            "standalone": {
+              "type": "string"
             }
           }
         }

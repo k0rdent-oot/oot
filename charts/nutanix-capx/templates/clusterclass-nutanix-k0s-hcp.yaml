@@ -1,40 +1,36 @@
 {{- if .Values.modes.hcp.enabled }}
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: ClusterClass
 metadata:
-  name: nutanix-k0s-hcp
-  namespace: {{ .Release.Namespace }}
+  name: {{ .Values.class.name.hcp }}
+  labels:
+    {{- include "nutanix-capx.labels" . | nindent 4 }}
 spec:
   controlPlane:
-    ref:
+    templateRef:
       apiVersion: controlplane.cluster.x-k8s.io/v1beta1
-      kind: K0smotronControlPlane
-      namespace: {{ .Release.Namespace }}
-    machineInfrastructure:
-      ref:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-        kind: NutanixMachineTemplate
-        namespace: {{ .Release.Namespace }}
+      kind: K0smotronControlPlaneTemplate
+      name: {{ include "nutanix-capx.hcp.controlPlaneTemplateName" . }}
   infrastructure:
-    ref:
+    templateRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       kind: NutanixCluster
-      namespace: {{ .Release.Namespace }}
+      name: {{ include "nutanix-capx.clusterTemplateName" . }}
   workers:
     machineDeployments:
     - class: default-worker
       template:
         bootstrap:
-          ref:
+          templateRef:
             apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
             kind: K0sWorkerConfigTemplate
-            namespace: {{ .Release.Namespace }}
+            name: {{ include "nutanix-capx.hcp.workerBootstrapTemplateName" . }}
         infrastructure:
-          ref:
+          templateRef:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
             kind: NutanixMachineTemplate
-            namespace: {{ .Release.Namespace }}
+            name: {{ include "nutanix-capx.hcp.workerMachineTemplateName" . }}
   variables:
   - name: nutanixClusterConfig
     required: true
@@ -64,6 +60,14 @@ spec:
                   namespace:
                     type: string
                 description: "Reference to credential secret"
+              additionalTrustBundle:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                description: "Reference to ConfigMap containing additional CA certificates"
           controlPlaneEndpoint:
             type: object
             properties:
@@ -170,66 +174,4 @@ spec:
                       type: string
                     effect:
                       type: string
-  patches:
-  - name: nutanixCluster
-    definitions:
-    - selector:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-        kind: NutanixCluster
-        matchResources:
-          infrastructureCluster: true
-      jsonPatches:
-      - op: add
-        path: "/spec/prismCentral"
-        valueFrom:
-          variable: nutanixClusterConfig
-          value: "prismCentral"
-      - op: add
-        path: "/spec/controlPlaneEndpoint"
-        valueFrom:
-          variable: nutanixClusterConfig
-          value: "controlPlaneEndpoint"
-  - name: nutanixWorkerMachineTemplate
-    definitions:
-    - selector:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-        kind: NutanixMachineTemplate
-        matchResources:
-          machineDeploymentClass:
-            names: ["default-worker"]
-      jsonPatches:
-      - op: add
-        path: "/spec/template/spec"
-        valueFrom:
-          variable: nutanixMachineConfig
-  - name: k0sWorkerConfig
-    definitions:
-    - selector:
-        apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-        kind: K0sWorkerConfigTemplate
-        matchResources:
-          machineDeploymentClass:
-            names: ["default-worker"]
-      jsonPatches:
-      - op: add
-        path: "/spec/template/spec/version"
-        valueFrom:
-          variable: k0sConfig
-          value: "version"
-      - op: add
-        path: "/spec/template/spec/args"
-        value: ["--enable-cloud-provider", "--kubelet-extra-args=--cloud-provider=external"]
-  - name: k0smotronControlPlane
-    definitions:
-    - selector:
-        apiVersion: controlplane.cluster.x-k8s.io/v1beta1
-        kind: K0smotronControlPlane
-        matchResources:
-          controlPlane: true
-      jsonPatches:
-      - op: add
-        path: "/spec/version"
-        valueFrom:
-          variable: k0sConfig
-          value: "version"
 {{- end }}

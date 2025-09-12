@@ -126,9 +126,46 @@ spec:
 EOF
 ```
 
+## Cluster Deployment Modes
+
+This provider supports two deployment modes:
+
+### **Hosted Control Plane (HCP) Mode**
+- Uses `K0smotronControlPlaneTemplate` - control plane runs in the management cluster
+- Worker nodes run on Nutanix VMs via `NutanixMachineTemplate`
+- No control plane VM infrastructure required
+- Version upgrades handled via ClusterClass updates
+
+### **Standalone Mode** 
+- Uses `K0sControlPlaneTemplate` - control plane runs on Nutanix VMs
+- Both control plane and worker nodes use `NutanixMachineTemplate`
+- Full VM-based deployment on Nutanix infrastructure
+- Traditional k0s cluster architecture
+
+Both modes use CAPI v1beta2 ClusterClass with Template resources for consistent management.
+
+### **Template Resources Created**
+
+The chart creates the following Template resources with deterministic names:
+
+**HCP Mode:**
+- `K0smotronControlPlaneTemplate`: `<release-name>-hcp-cp`
+- `K0sWorkerConfigTemplate`: `<release-name>-hcp-worker-bootstrap`
+- `NutanixMachineTemplate` (workers): `<release-name>-hcp-worker-mt`
+- `NutanixCluster`: `<release-name>-cluster`
+
+**Standalone Mode:**
+- `K0sControlPlaneTemplate`: `<release-name>-standalone-cp`
+- `NutanixMachineTemplate` (control plane): `<release-name>-standalone-cp-mt`
+- `K0sWorkerConfigTemplate`: `<release-name>-standalone-worker-bootstrap`
+- `NutanixMachineTemplate` (workers): `<release-name>-standalone-worker-mt`
+- `NutanixCluster`: `<release-name>-cluster`
+
+ClusterClasses reference these templates via `templateRef.name` (not `ref`), following CAPI v1beta2 best practices.
+
 ## Deploy a Hosted Control Plane (HCP) Cluster
 
-The HCP mode runs the control plane using K0smotronControlPlane in the management cluster, while worker nodes run on Nutanix VMs.
+The HCP mode runs the control plane using K0smotronControlPlaneTemplate in the management cluster, while worker nodes run on Nutanix VMs.
 
 ```bash
 kubectl apply -f - <<'EOF'
@@ -464,10 +501,18 @@ These components can be installed post-deployment using Helm charts or via k0s c
 
 ## Version Compatibility
 
+- **CAPI Core**: v1.8.x (required for v1beta2 ClusterClass support)
 - **CAPX Provider**: v1.7.0
-- **CAPI Core**: v1.7.x
 - **k0s**: v1.29.2+k0s.0 (adjustable)
-- **k0smotron**: Compatible with k0s v1.29.x
+- **k0smotron**: v1.0.6+ (for K0smotronControlPlaneTemplate support)
+
+**Template API Versions Used:**
+- ClusterClass: `cluster.x-k8s.io/v1beta2`
+- K0smotronControlPlaneTemplate: `controlplane.cluster.x-k8s.io/v1beta1`
+- K0sControlPlaneTemplate: `controlplane.cluster.x-k8s.io/v1beta1`
+- K0sWorkerConfigTemplate: `bootstrap.cluster.x-k8s.io/v1beta1`
+- NutanixMachineTemplate: `infrastructure.cluster.x-k8s.io/v1beta1`
+- NutanixCluster: `infrastructure.cluster.x-k8s.io/v1beta1`
 
 Always check the [CAPX compatibility matrix](https://github.com/nutanix-cloud-native/cluster-api-provider-nutanix/blob/main/docs/compatibility.md) for the latest supported versions.
 
