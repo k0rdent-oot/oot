@@ -1,6 +1,6 @@
 # Nutanix CAPX Provider Smoke Tests
 
-This directory contains minimal smoke test assets for validating the Nutanix CAPX provider in both HCP and Standalone modes.
+This directory contains minimal smoke test assets for validating the Nutanix CAPX provider in both HCP and Standalone modes using the new split charts.
 
 ## Prerequisites
 
@@ -23,10 +23,20 @@ helm install kcm oci://ghcr.io/k0rdent/kcm/charts/kcm --version 1.2.0 -n kcm-sys
 kubectl wait --for=condition=Ready=True management/kcm --timeout=300s
 ```
 
-### 2. Install Nutanix Provider Pack
+### 2. Install Nutanix Provider Packs
 
+Choose one or both provider packs based on your testing needs:
+
+#### For HCP Mode Testing:
 ```bash
-helm install nutanix-pp oci://ghcr.io/k0rdent-oot/oot/charts/nutanix-pp -n kcm-system --take-ownership
+helm install nutanix-pp-hcp oci://ghcr.io/k0rdent-oot/oot/charts/nutanix-pp-hcp -n kcm-system --take-ownership
+
+kubectl wait --for=condition=Ready=True management/kcm --timeout=300s
+```
+
+#### For Standalone Mode Testing:
+```bash
+helm install nutanix-pp-standalone oci://ghcr.io/k0rdent-oot/oot/charts/nutanix-pp-standalone -n kcm-system --take-ownership
 
 kubectl wait --for=condition=Ready=True management/kcm --timeout=300s
 ```
@@ -114,11 +124,11 @@ kubectl get providertemplate -A
 kubectl get providerinterface -A
 kubectl get clustertemplate -A
 
-# Should show:
-# - cluster-api-provider-nutanix-1-0-0 (ProviderTemplate)
-# - cluster-api-provider-nutanix (ProviderInterface)  
-# - nutanix-k0s-hcp-1-0-0 (ClusterTemplate)
-# - nutanix-k0s-standalone-1-0-0 (ClusterTemplate)
+# Should show (depending on which provider packs you installed):
+# - nutanix-capx-hcp-0-1-0 (ProviderTemplate)
+# - nutanix-capx-hcp (ProviderInterface)
+# - nutanix-capx-standalone-0-1-0 (ProviderTemplate)
+# - nutanix-capx-standalone (ProviderInterface)
 ```
 
 ## Testing Modes
@@ -132,14 +142,15 @@ kubectl get clustertemplate -A
    # Edit values-local.yaml and replace all CHANGE_ME values
    ```
 
-2. **Test helm template**:
+2. **Test with the new HCP chart** (for development testing):
    ```bash
-   helm template nutanix-hcp ../../charts/nutanix-capx -f values-local.yaml --namespace kcm-system
+   helm template nutanix-hcp ../charts/nutanix-capx-hcp -f values-local.yaml --namespace kcm-system
    ```
 
-3. **Deploy cluster**:
+3. **Deploy cluster using ClusterDeployment**:
    ```bash
    # Edit clusterdeployment.yaml and replace CHANGE_ME values
+   # Update template reference to: nutanix-k0s-hcp-0-1-0
    kubectl apply -f clusterdeployment.yaml
    ```
 
@@ -165,14 +176,15 @@ kubectl get clustertemplate -A
    # Edit values-local.yaml and replace all CHANGE_ME values
    ```
 
-2. **Test helm template**:
+2. **Test with the new Standalone chart** (for development testing):
    ```bash
-   helm template nutanix-standalone ../../charts/nutanix-capx -f values-local.yaml --namespace kcm-system
+   helm template nutanix-standalone ../charts/nutanix-capx-standalone -f values-local.yaml --namespace kcm-system
    ```
 
-3. **Deploy cluster**:
+3. **Deploy cluster using ClusterDeployment**:
    ```bash
    # Edit clusterdeployment.yaml and replace CHANGE_ME values
+   # Update template reference to: nutanix-k0s-standalone-0-1-0
    kubectl apply -f clusterdeployment.yaml
    ```
 
@@ -201,11 +213,31 @@ kubectl get clustertemplate -A
 - ✅ **All nodes joined** and showing Ready status
 - ✅ **Cluster accessible** via `clusterctl get kubeconfig`
 
+## Differences from Legacy Chart
+
+The new split charts provide several improvements:
+
+### Simplified Configuration
+- **No mode switching**: Each chart focuses on one deployment mode
+- **No XOR validation**: No need to ensure only one mode is enabled
+- **Cleaner values**: Removed mode-specific conditionals
+
+### Better Discoverability
+- **Separate provider packs**: HCP and Standalone appear as distinct options in k0rdent/KCM
+- **Clear naming**: Chart names directly indicate their purpose
+- **Upstream alignment**: Follows the same patterns as Hetzner and KubeVirt providers
+
+### Template References
+- **Consistent naming**: Template names follow the same patterns as the legacy chart
+- **ClusterClass compatibility**: Existing examples work with minor template name updates
+
 ## Troubleshooting
 
 ### Common Issues:
 
-1. **Schema validation errors**: Check that only one mode is enabled (`hcp` OR `standalone`, not both)
+1. **Provider pack not found**: 
+   - Ensure you installed the correct provider pack (`nutanix-pp-hcp` or `nutanix-pp-standalone`)
+   - Check `kubectl get clustertemplate -A` shows the expected template
 
 2. **VM creation failures**: 
    - Verify Prism Central credentials
@@ -259,3 +291,12 @@ After successful smoke testing:
 2. **Production Hardening**: Review security settings, resource limits, backup strategies
 3. **Monitoring**: Set up cluster monitoring and alerting
 4. **Scaling Tests**: Test horizontal and vertical scaling scenarios
+
+## Migration from Legacy Tests
+
+If you have existing smoke tests using the legacy `nutanix-capx` chart:
+
+1. **Update ClusterDeployment templates**: Change template references from combined chart to split chart names
+2. **Remove mode configuration**: No need to set `modes.hcp.enabled` or `modes.standalone.enabled`
+3. **Update values files**: Remove mode-specific settings
+4. **Use appropriate provider pack**: Install `nutanix-pp-hcp` or `nutanix-pp-standalone` instead of the legacy `nutanix-pp`

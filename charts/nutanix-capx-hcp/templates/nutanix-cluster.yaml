@@ -1,0 +1,25 @@
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: NutanixCluster
+metadata:
+  name: {{ include "nutanix-capx-hcp.clusterTemplateName" . }}
+  labels:
+    {{- include "nutanix-capx-hcp.labels" . | nindent 4 }}
+spec:
+  controlPlaneEndpoint:
+    host: {{ .Values.nutanix.controlPlaneEndpoint.host | quote }}
+    port: {{ .Values.nutanix.controlPlaneEndpoint.port }}
+  prismCentral:
+    address: {{ .Values.nutanix.prismCentral.address | quote }}
+    port: {{ .Values.nutanix.prismCentral.port }}
+    insecure: {{ .Values.nutanix.prismCentral.insecure }}
+    {{- if .Values.nutanix.prismCentral.usePerClusterCredential }}
+    credentialRef:
+      kind: Secret
+      name: {{ .Values.nutanix.prismCentral.credentialSecretName | quote }}
+    {{- end }}
+    {{- if .Values.nutanix.prismCentral.additionalTrustBundleConfigMapName }}
+    additionalTrustBundle:
+      kind: ConfigMap
+      name: {{ .Values.nutanix.prismCentral.additionalTrustBundleConfigMapName | quote }}
+    {{- end }}

@@ -1,0 +1,18 @@
+---
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: ProviderInterface
+metadata:
+  name: cluster-api-provider-nutanix-standalone
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  clusterGVKs:
+    - group: infrastructure.cluster.x-k8s.io
+      version: v1beta1
+      kind: NutanixCluster
+  clusterIdentityKinds:
+    - Secret
+  description: "Nutanix infrastructure provider for Cluster API (Standalone mode)"
+  exposedProviders:
+    - nutanix-standalone
+  contract: v1beta1

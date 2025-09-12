@@ -5,7 +5,7 @@ metadata:
   name: nutanix-standalone-smoke-test
   namespace: kcm-system
 spec:
-  template: nutanix-k0s-standalone-1-0-0  # Matches ClusterTemplate name from provider pack
+  template: nutanix-k0s-standalone-0-1-0  # Matches ClusterTemplate name from provider pack
   # credential: nutanix-cluster-identity-cred  # Only if using per-cluster credentials
   config:
     # Replace these with your actual values
@@ -62,10 +62,3 @@ spec:
     # Scaling
     controlPlaneNumber: 3
     workersNumber: 2
-    
-    # Enable Standalone mode
-    modes:
-      hcp:
-        enabled: false
-      standalone:
-        enabled: true

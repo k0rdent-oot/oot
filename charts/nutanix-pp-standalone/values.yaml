@@ -1,0 +1,10 @@
+# Configuration for Nutanix Standalone Provider Pack
+
+# Chart version for nutanix-capx-standalone
+chartVersion: "0.1.0"
+
+# Default values for cluster templates
+cluster:
+  standalone:
+    # Values for standalone cluster deployment
+    enabled: true

@@ -1,0 +1,8 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.capx.namespace }}
+  labels:
+    name: {{ .Values.capx.namespace }}
+    cluster.x-k8s.io/provider: infrastructure-nutanix

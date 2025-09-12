@@ -1,0 +1,5 @@
+apiVersion: v2
+name: nutanix-pp-hcp
+description: A Nutanix HCP Provider Pack for k0rdent with CAPX integration
+type: application
+version: 0.1.0

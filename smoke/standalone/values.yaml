@@ -53,13 +53,5 @@ clusterNetwork:
   services:
     cidrBlocks: ["10.95.0.0/16"]
 
-modes:
-  hcp:
-    enabled: false
-  standalone:
-    enabled: true
-
 class:
-  name:
-    hcp: "nutanix-k0s-hcp"
-    standalone: "nutanix-k0s-standalone"
+  name: "nutanix-k0s-standalone"

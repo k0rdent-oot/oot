@@ -5,7 +5,7 @@ metadata:
   name: nutanix-hcp-smoke-test
   namespace: kcm-system
 spec:
-  template: nutanix-k0s-hcp-1-0-0  # Matches ClusterTemplate name from provider pack
+  template: nutanix-k0s-hcp-0-1-0  # Matches ClusterTemplate name from provider pack
   # credential: nutanix-cluster-identity-cred  # Only if using per-cluster credentials
   config:
     # Replace these with your actual values
@@ -56,10 +56,3 @@ spec:
     
     # Scaling
     workersNumber: 2
-    
-    # Enable HCP mode
-    modes:
-      hcp:
-        enabled: true
-      standalone:
-        enabled: false

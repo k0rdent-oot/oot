@@ -1,0 +1,10 @@
+# Configuration for Nutanix HCP Provider Pack
+
+# Chart version for nutanix-capx-hcp  
+chartVersion: "0.1.0"
+
+# Default values for cluster templates
+cluster:
+  hcp:
+    # Values for HCP cluster deployment
+    enabled: true

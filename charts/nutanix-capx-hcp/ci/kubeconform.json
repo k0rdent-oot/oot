@@ -1,0 +1,9 @@
+{
+  "summary": true,
+  "output": "json",
+  "strict": false,
+  "ignoreMissingSchemas": true,
+  "skip": [
+    "Namespace"
+  ]
+}

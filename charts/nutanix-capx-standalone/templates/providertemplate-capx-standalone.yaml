@@ -1,0 +1,25 @@
+---
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: ProviderTemplate
+metadata:
+  name: cluster-api-provider-nutanix-standalone
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  providers:
+    - name: nutanix
+      type: Infrastructure
+      version: {{ .Values.capx.version | quote }}
+      {{- if .Values.capx.namespace }}
+      namespace: {{ .Values.capx.namespace | quote }}
+      {{- end }}
+  capiOperator:
+    enabled: true
+  helm:
+    chartSpec:
+      chart: cluster-api-provider-nutanix
+      version: {{ .Chart.Version | quote }}
+      interval: 10m0s
+      sourceRef:
+        kind: HelmRepository
+        name: oot-repo

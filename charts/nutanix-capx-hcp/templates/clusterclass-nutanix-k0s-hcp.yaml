@@ -1,0 +1,175 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: ClusterClass
+metadata:
+  name: {{ .Values.class.name }}
+  labels:
+    {{- include "nutanix-capx-hcp.labels" . | nindent 4 }}
+spec:
+  controlPlane:
+    templateRef:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+      kind: K0smotronControlPlaneTemplate
+      name: {{ include "nutanix-capx-hcp.controlPlaneTemplateName" . }}
+  infrastructure:
+    templateRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: NutanixCluster
+      name: {{ include "nutanix-capx-hcp.clusterTemplateName" . }}
+  workers:
+    machineDeployments:
+    - class: default-worker
+      template:
+        bootstrap:
+          templateRef:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: K0sWorkerConfigTemplate
+            name: {{ include "nutanix-capx-hcp.workerBootstrapTemplateName" . }}
+        infrastructure:
+          templateRef:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: NutanixMachineTemplate
+            name: {{ include "nutanix-capx-hcp.workerMachineTemplateName" . }}
+  variables:
+  - name: nutanixClusterConfig
+    required: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          prismCentral:
+            type: object
+            properties:
+              address:
+                type: string
+                description: "Prism Central IP address or FQDN"
+              port:
+                type: integer
+                default: 9440
+                description: "Prism Central port"
+              insecure:
+                type: boolean
+                default: false
+                description: "Skip TLS verification"
+              credentialRef:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                description: "Reference to credential secret"
+              additionalTrustBundle:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                description: "Reference to ConfigMap containing additional CA certificates"
+          controlPlaneEndpoint:
+            type: object
+            properties:
+              host:
+                type: string
+                description: "VIP or static IP for control plane endpoint"
+              port:
+                type: integer
+                default: 6443
+                description: "Control plane endpoint port"
+            required: ["host"]
+  - name: nutanixMachineConfig
+    required: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          image:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: ["name", "uuid"]
+                default: "name"
+              name:
+                type: string
+              uuid:
+                type: string
+            description: "VM image reference"
+          cluster:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: ["name", "uuid"]
+                default: "name"
+              name:
+                type: string
+              uuid:
+                type: string
+            description: "Prism Element cluster reference"
+          subnets:
+            type: array
+            items:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum: ["name", "uuid"]
+                  default: "name"
+                name:
+                  type: string
+                uuid:
+                  type: string
+            description: "Network subnets"
+          bootType:
+            type: string
+            enum: ["legacy", "uefi"]
+            default: "legacy"
+          vcpusPerSocket:
+            type: integer
+            default: 1
+          vcpuSockets:
+            type: integer
+            default: 2
+          memorySize:
+            type: string
+            default: "4Gi"
+          systemDiskSize:
+            type: string
+            default: "40Gi"
+          project:
+            type: string
+            description: "Nutanix project name"
+          additionalCategories:
+            type: array
+            items:
+              type: string
+            description: "Additional Nutanix categories"
+  - name: k0sConfig
+    required: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          version:
+            type: string
+            default: "v1.29.2+k0s.0"
+          worker:
+            type: object
+            properties:
+              labels:
+                type: object
+                additionalProperties:
+                  type: string
+              taints:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    key:
+                      type: string
+                    value:
+                      type: string
+                    effect:
+                      type: string

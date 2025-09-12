@@ -1,16 +1,20 @@
-name: Validate Nutanix CAPX
+name: Validate Nutanix CAPX (Legacy)
+
+# DEPRECATED: This workflow validates the legacy nutanix-capx chart only
+# New charts (nutanix-capx-hcp, nutanix-capx-standalone, provider packs) 
+# are validated by validate-nutanix-charts.yml
 
 on:
   pull_request:
     paths:
       - 'charts/nutanix-capx/**'
-      - 'NUTANIX.md'
+      - '!charts/nutanix-capx-*/**'  # Exclude new split charts
   push:
     branches:
       - main
     paths:
-      - 'charts/nutanix-capx/**'
-      - 'NUTANIX.md'
+      - 'charts/nutanix-capx/**' 
+      - '!charts/nutanix-capx-*/**'  # Exclude new split charts
 
 jobs:
   validate-nutanix-capx:

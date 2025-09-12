@@ -1,8 +1,22 @@
 # k0rdent/kcm (out-of-tree), Nutanix Provider
 
+The Nutanix provider for k0rdent enables deployment of Kubernetes clusters on Nutanix infrastructure using Cluster API Provider Nutanix (CAPX). This provider supports two deployment modes:
+
+- **🏗️ Hosted Control Plane (HCP)**: Control plane runs as pods in the management cluster using k0smotron
+- **🖥️ Standalone**: Control plane runs on dedicated Nutanix VMs
+
+## Chart Selection
+
+| Mode | Chart | Provider Pack | Use Case |
+|------|-------|---------------|----------|
+| **HCP** | [`nutanix-capx-hcp`](charts/nutanix-capx-hcp/) | [`nutanix-pp-hcp`](charts/nutanix-pp-hcp/) | Managed control plane, faster scaling, shared management |
+| **Standalone** | [`nutanix-capx-standalone`](charts/nutanix-capx-standalone/) | [`nutanix-pp-standalone`](charts/nutanix-pp-standalone/) | Full VM-based cluster, traditional deployment |
+
+> **Note**: The combined `nutanix-capx` chart is deprecated. Use the dedicated charts above for new deployments.
+
 ## Prerequisites
 
-Before deploying Kubernetes clusters on Nutanix using the CAPX provider, ensure the following requirements are met:
+Before deploying Kubernetes clusters on Nutanix, ensure the following requirements are met:
 
 ### Nutanix Infrastructure
 - **Prism Central**: Accessible endpoint with administrative privileges
@@ -33,19 +47,7 @@ helm install kcm oci://ghcr.io/k0rdent/kcm/charts/kcm --version 1.2.0 -n kcm-sys
   --set velero.enabled=false
 ```
 
-## Wait for Management object readiness
-
-```bash
-kubectl wait --for=condition=Ready=True management/kcm --timeout=300s
-```
-
-## Install Nutanix CAPX Provider
-
-```bash
-helm install nutanix-capx oci://ghcr.io/k0rdent-oot/oot/charts/nutanix-capx -n kcm-system --take-ownership
-```
-
-## Wait for Management object readiness
+Wait for management object readiness:
 
 ```bash
 kubectl wait --for=condition=Ready=True management/kcm --timeout=300s
@@ -53,7 +55,7 @@ kubectl wait --for=condition=Ready=True management/kcm --timeout=300s
 
 ## Credentials Configuration
 
-There are two options for providing Nutanix credentials to CAPX:
+There are three options for providing Nutanix credentials to CAPX:
 
 ### Option 1: Global Credentials (Recommended)
 
@@ -108,7 +110,7 @@ stringData:
         "data": {
           "prismCentral": {
             "username": "cluster-admin",
-            "password": "cluster-specific-password"
+            "password": "cluster-password"
           },
           "prismElements": null
         }
@@ -167,35 +169,229 @@ nutanix:
     additionalTrustBundleConfigMapName: "nutanix-ca-bundle"
 ```
 
-## Cluster Deployment Modes
+## 🏗️ Hosted Control Plane (HCP) Deployment
 
-This provider supports two deployment modes:
+The HCP mode runs the control plane using k0smotron in the management cluster, while worker nodes run on Nutanix VMs.
 
-### **Hosted Control Plane (HCP) Mode**
-- Uses `K0smotronControlPlaneTemplate` - control plane runs in the management cluster
-- Worker nodes run on Nutanix VMs via `NutanixMachineTemplate`
-- No control plane VM infrastructure required
-- Version upgrades handled via ClusterClass updates
+### Install Provider Pack
 
-### **Standalone Mode** 
-- Uses `K0sControlPlaneTemplate` - control plane runs on Nutanix VMs
-- Both control plane and worker nodes use `NutanixMachineTemplate`
-- Full VM-based deployment on Nutanix infrastructure
-- Traditional k0s cluster architecture
+```bash
+helm install nutanix-pp-hcp oci://ghcr.io/k0rdent-oot/oot/charts/nutanix-pp-hcp -n kcm-system --take-ownership
+```
 
-Both modes use CAPI v1beta2 ClusterClass with Template resources for consistent management.
+Wait for readiness:
 
-### **Template Resources Created**
+```bash
+kubectl wait --for=condition=Ready=True management/kcm --timeout=300s
+```
 
-The chart creates the following Template resources with deterministic names:
+### Deploy HCP Cluster
 
-**HCP Mode:**
+Create a cluster configuration file:
+
+```yaml
+# hcp-cluster.yaml
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: ClusterDeployment
+metadata:
+  name: nutanix-hcp-cluster
+  namespace: kcm-system
+spec:
+  template: nutanix-k0s-hcp-0-1-0  # Matches the provider pack version
+  config:
+    # Nutanix infrastructure settings
+    nutanix:
+      prismCentral:
+        address: "10.1.1.100"         # Your Prism Central IP
+        port: 9440
+        insecure: false
+        # usePerClusterCredential: true  # Uncomment if using per-cluster creds
+      
+      controlPlaneEndpoint:
+        host: "10.1.1.200"            # VIP outside DHCP range
+        port: 6443
+
+    # Machine configuration
+    machineDefaults:
+      image:
+        type: name
+        name: "ubuntu-22.04-k0s"      # Your prepared image
+      cluster:
+        type: name
+        name: "PE-Cluster-01"         # Your Prism Element cluster
+      subnets:
+        - type: name
+          name: "VM-Network"          # Your network subnet
+      bootType: legacy
+      vcpusPerSocket: 1
+      vcpuSockets: 2
+      memorySize: "4Gi"
+      systemDiskSize: "40Gi"
+
+    # Worker node configuration
+    worker:
+      vcpuSockets: 2
+      memorySize: "4Gi"
+      systemDiskSize: "40Gi"
+
+    # k0s configuration
+    k0s:
+      version: "v1.29.2+k0s.0"
+      worker:
+        labels:
+          node-role.kubernetes.io/worker: ""
+
+    # Cluster networking
+    clusterNetwork:
+      pods:
+        cidrBlocks: ["10.243.0.0/16"]
+      services:
+        cidrBlocks: ["10.95.0.0/16"]
+
+    # Scaling
+    workersNumber: 2
+```
+
+Deploy the cluster:
+
+```bash
+kubectl apply -f hcp-cluster.yaml
+```
+
+### Monitor HCP Deployment
+
+```bash
+# Check cluster deployment status
+kubectl get clusterdeployment -n kcm-system
+
+# Check worker machines (no control plane machines in HCP mode)
+kubectl get machine -n kcm-system
+
+# Check k0smotron control plane pods in management cluster
+kubectl get pods -n kcm-system | grep k0smotron
+```
+
+## 🖥️ Standalone Deployment
+
+The Standalone mode runs both control plane and worker nodes on Nutanix VMs.
+
+### Install Provider Pack
+
+```bash
+helm install nutanix-pp-standalone oci://ghcr.io/k0rdent-oot/oot/charts/nutanix-pp-standalone -n kcm-system --take-ownership
+```
+
+Wait for readiness:
+
+```bash
+kubectl wait --for=condition=Ready=True management/kcm --timeout=300s
+```
+
+### Deploy Standalone Cluster
+
+Create a cluster configuration file:
+
+```yaml
+# standalone-cluster.yaml
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: ClusterDeployment
+metadata:
+  name: nutanix-standalone-cluster
+  namespace: kcm-system
+spec:
+  template: nutanix-k0s-standalone-0-1-0  # Matches the provider pack version
+  config:
+    # Nutanix infrastructure settings
+    nutanix:
+      prismCentral:
+        address: "10.1.1.100"         # Your Prism Central IP
+        port: 9440
+        insecure: false
+      
+      controlPlaneEndpoint:
+        host: "10.1.1.201"            # Different VIP from HCP
+        port: 6443
+
+    # Machine configuration
+    machineDefaults:
+      image:
+        type: name
+        name: "ubuntu-22.04-k0s"      # Your prepared image
+      cluster:
+        type: name
+        name: "PE-Cluster-01"         # Your Prism Element cluster
+      subnets:
+        - type: name
+          name: "VM-Network"          # Your network subnet
+      bootType: legacy
+      vcpusPerSocket: 1
+      vcpuSockets: 2
+      memorySize: "4Gi"
+      systemDiskSize: "40Gi"
+
+    # Control plane configuration
+    controlPlane:
+      vcpuSockets: 4
+      memorySize: "8Gi"
+      systemDiskSize: "80Gi"
+
+    # Worker node configuration
+    worker:
+      vcpuSockets: 2
+      memorySize: "4Gi"
+      systemDiskSize: "40Gi"
+
+    # k0s configuration
+    k0s:
+      version: "v1.29.2+k0s.0"
+      controlPlane:
+        replicas: 3
+      worker:
+        labels:
+          node-role.kubernetes.io/worker: ""
+
+    # Cluster networking
+    clusterNetwork:
+      pods:
+        cidrBlocks: ["10.243.0.0/16"]
+      services:
+        cidrBlocks: ["10.95.0.0/16"]
+
+    # Scaling
+    controlPlaneNumber: 3
+    workersNumber: 2
+```
+
+Deploy the cluster:
+
+```bash
+kubectl apply -f standalone-cluster.yaml
+```
+
+### Monitor Standalone Deployment
+
+```bash
+# Check cluster deployment status
+kubectl get clusterdeployment -n kcm-system
+
+# Check all machines (both control plane and workers)
+kubectl get machine -n kcm-system
+
+# Check k0s control plane
+kubectl get k0scontrolplane -n kcm-system
+```
+
+## Template Resources Created
+
+Each chart creates deterministic template names for ClusterClass references:
+
+### HCP Templates:
 - `K0smotronControlPlaneTemplate`: `<release-name>-hcp-cp`
-- `K0sWorkerConfigTemplate`: `<release-name>-hcp-worker-bootstrap`
+- `K0sWorkerConfigTemplate`: `<release-name>-hcp-worker-bootstrap` 
 - `NutanixMachineTemplate` (workers): `<release-name>-hcp-worker-mt`
 - `NutanixCluster`: `<release-name>-cluster`
 
-**Standalone Mode:**
+### Standalone Templates:
 - `K0sControlPlaneTemplate`: `<release-name>-standalone-cp`
 - `NutanixMachineTemplate` (control plane): `<release-name>-standalone-cp-mt`
 - `K0sWorkerConfigTemplate`: `<release-name>-standalone-worker-bootstrap`
@@ -225,328 +421,19 @@ ClusterClasses reference these templates via `templateRef.name` (not `ref`), fol
 
 **⚠️ Important:** The `controlPlaneEndpoint.host` must be reachable from all nodes and **must not collide with DHCP/IPAM pools**. Reserve this IP outside your Nutanix IPAM range.
 
-## Deploy a Hosted Control Plane (HCP) Cluster
+## Getting Cluster Access
 
-The HCP mode runs the control plane using K0smotronControlPlaneTemplate in the management cluster, while worker nodes run on Nutanix VMs.
-
-```bash
-kubectl apply -f - <<'EOF'
----
-apiVersion: k0rdent.mirantis.com/v1beta1
-kind: ClusterDeployment
-metadata:
-  name: nutanix-hcp-demo
-  namespace: kcm-system
-spec:
-  template: nutanix-k0s-hcp
-  credential: nutanix-cluster-identity-cred  # Only if using per-cluster credentials
-  config:
-    # Nutanix Infrastructure
-    nutanix:
-      prismCentral:
-        address: "10.1.1.100"
-        port: 9440
-        insecure: false
-        # Uncomment for per-cluster credentials
-        # usePerClusterCredential: true
-        # credentialSecretName: "nutanix-cluster-creds"
-      controlPlaneEndpoint:
-        host: "10.1.1.200"  # Static IP outside DHCP range
-        port: 6443
-    
-    # Machine Configuration
-    machineDefaults:
-      image:
-        type: name
-        name: "ubuntu-22.04-k0s"
-      cluster:
-        type: name
-        name: "PE-Cluster-01"
-      subnets:
-        - type: name
-          name: "VM-Network"
-      bootType: legacy
-      vcpusPerSocket: 1
-      vcpuSockets: 2
-      memorySize: "4Gi" 
-      systemDiskSize: "40Gi"
-      # project: "k0s-project"
-      # additionalCategories: ["k0s", "hcp"]
-    
-    # Worker-specific overrides
-    worker:
-      vcpuSockets: 2
-      memorySize: "4Gi"
-      systemDiskSize: "40Gi"
-    
-    # k0s Configuration
-    k0s:
-      version: "v1.29.2+k0s.0"
-      worker:
-        labels:
-          node-role.kubernetes.io/worker: ""
-        # taints: []
-    
-    # Cluster Configuration
-    clusterNetwork:
-      pods:
-        cidrBlocks: ["10.243.0.0/16"]
-      services:
-        cidrBlocks: ["10.95.0.0/16"]
-    
-    # Scaling
-    workersNumber: 2
-EOF
-```
-
-## Deploy a Standalone Cluster
-
-The standalone mode runs both control plane and worker nodes on Nutanix VMs using K0sControlPlane.
+Once the cluster is deployed, retrieve the kubeconfig:
 
 ```bash
-kubectl apply -f - <<'EOF'
----
-apiVersion: k0rdent.mirantis.com/v1beta1
-kind: ClusterDeployment
-metadata:
-  name: nutanix-standalone-demo
-  namespace: kcm-system
-spec:
-  template: nutanix-k0s-standalone
-  credential: nutanix-cluster-identity-cred  # Only if using per-cluster credentials
-  config:
-    # Nutanix Infrastructure 
-    nutanix:
-      prismCentral:
-        address: "10.1.1.100"
-        port: 9440
-        insecure: false
-        # Uncomment for per-cluster credentials
-        # usePerClusterCredential: true
-        # credentialSecretName: "nutanix-cluster-creds"
-      controlPlaneEndpoint:
-        host: "10.1.1.201"  # Static IP outside DHCP range
-        port: 6443
-    
-    # Machine Configuration
-    machineDefaults:
-      image:
-        type: name
-        name: "ubuntu-22.04-k0s"
-      cluster:
-        type: name
-        name: "PE-Cluster-01"
-      subnets:
-        - type: name
-          name: "VM-Network"
-      bootType: legacy
-      vcpusPerSocket: 1
-      vcpuSockets: 2
-      memorySize: "4Gi"
-      systemDiskSize: "40Gi"
-      # project: "k0s-project"
-      # additionalCategories: ["k0s", "standalone"]
-    
-    # Control plane specific overrides
-    controlPlane:
-      vcpuSockets: 4
-      memorySize: "8Gi"
-      systemDiskSize: "80Gi"
-    
-    # Worker specific overrides
-    worker:
-      vcpuSockets: 2
-      memorySize: "4Gi"
-      systemDiskSize: "40Gi"
-    
-    # k0s Configuration
-    k0s:
-      version: "v1.29.2+k0s.0"
-      worker:
-        labels:
-          node-role.kubernetes.io/worker: ""
-        # taints: []
-    
-    # Cluster Configuration
-    clusterNetwork:
-      pods:
-        cidrBlocks: ["10.243.0.0/16"]
-      services:
-        cidrBlocks: ["10.95.0.0/16"]
-    
-    # Scaling
-    controlPlaneNumber: 3
-    workersNumber: 2
-EOF
-```
+# Get cluster kubeconfig
+clusterctl get kubeconfig <cluster-name> -n kcm-system > cluster.kubeconfig
 
-## Monitoring Cluster Deployment
+# Check cluster nodes
+kubectl --kubeconfig=cluster.kubeconfig get nodes -o wide
 
-### Check cluster status
-
-```bash
-kubectl get cld -A
-kubectl get cluster -A
-clusterctl describe cluster nutanix-hcp-demo -n kcm-system
-```
-
-### Monitor machines
-
-```bash
-kubectl get machine -A
-kubectl get nutanixmachine -A
-```
-
-### Check k0s control plane status
-
-```bash
-# For HCP mode
-kubectl get k0smotroncontrolplane -A
-
-# For standalone mode  
-kubectl get k0scontrolplane -A
-```
-
-### Get cluster kubeconfig
-
-```bash
-# For HCP cluster
-clusterctl get kubeconfig nutanix-hcp-demo -n kcm-system > nutanix-hcp.kubeconfig
-
-# For standalone cluster
-clusterctl get kubeconfig nutanix-standalone-demo -n kcm-system > nutanix-standalone.kubeconfig
-```
-
-### Test cluster access
-
-```bash
-kubectl --kubeconfig=./nutanix-hcp.kubeconfig get nodes -o wide
-kubectl --kubeconfig=./nutanix-standalone.kubeconfig get nodes -o wide
-```
-
-## Advanced Configuration
-
-### Using UUIDs instead of names
-
-```yaml
-machineDefaults:
-  image:
-    type: uuid
-    uuid: "550e8400-e29b-41d4-a716-446655440000"
-  cluster:
-    type: uuid
-    uuid: "550e8400-e29b-41d4-a716-446655440001"
-  subnets:
-    - type: uuid
-      uuid: "550e8400-e29b-41d4-a716-446655440002"
-```
-
-### Multiple subnets
-
-```yaml
-machineDefaults:
-  subnets:
-    - type: name
-      name: "Primary-Network"
-    - type: name
-      name: "Storage-Network"
-```
-
-### Projects and categories
-
-```yaml
-machineDefaults:
-  project: "k0s-production"
-  additionalCategories:
-    - "environment:production"
-    - "workload:k0s"
-    - "managed-by:k0rdent"
-```
-
-### Node labels and taints
-
-```yaml
-k0s:
-  worker:
-    labels:
-      node-role.kubernetes.io/worker: ""
-      nutanix.com/cluster: "pe-cluster-01"
-    taints:
-      - key: "workload"
-        value: "batch"
-        effect: "NoSchedule"
-```
-
-## Troubleshooting
-
-### Common Issues
-
-#### 1. Control Plane Endpoint Unreachable
-- Verify the control plane endpoint IP is accessible from worker nodes
-- Check that the IP is not in DHCP range and properly reserved
-- Ensure firewall rules allow traffic on port 6443
-
-#### 2. VM Creation Failures
-- Check Prism Central credentials are correct
-- Verify image name/UUID exists and is accessible
-- Ensure cluster name/UUID is correct
-- Check subnet name/UUID exists
-- Verify sufficient resources (CPU, memory, storage) are available
-
-#### 3. Image Issues
-- Ensure the VM image has cloud-init installed and configured
-- Verify the image has required packages (SSH, curl, etc.)
-- Check image permissions in Nutanix
-
-#### 4. Network Connectivity
-- Verify VMs can reach the internet for k0s binary download
-- Check DNS resolution is working
-- Ensure container registries are accessible
-
-#### 5. k0s Join Issues
-- Check if k0s token generation is working in control plane
-- Verify worker nodes can reach the control plane endpoint
-- Check k0s service logs on worker nodes
-
-### Debugging Commands
-
-#### Check CAPX controller logs
-```bash
-kubectl logs -n capx-system deployment/capx-controller-manager
-```
-
-#### Check cluster-api controller logs
-```bash
-kubectl logs -n capi-system deployment/capi-controller-manager
-```
-
-#### Check k0smotron controller logs (for HCP mode)
-```bash
-kubectl logs -n k0smotron-system deployment/k0smotron-controller-manager
-```
-
-#### Get detailed machine information
-```bash
-kubectl describe nutanixmachine <machine-name> -n kcm-system
-```
-
-#### Check cluster status
-```bash
-kubectl describe cluster <cluster-name> -n kcm-system
-```
-
-### Recovery Procedures
-
-#### Reset a failed cluster deployment
-```bash
-kubectl delete clusterdeployment <cluster-name> -n kcm-system
-# Wait for cleanup, then redeploy
-```
-
-#### Force delete stuck machines
-```bash
-kubectl patch nutanixmachine <machine-name> -p '{"metadata":{"finalizers":null}}' --type=merge -n kcm-system
-kubectl delete nutanixmachine <machine-name> -n kcm-system
+# Check cluster status
+kubectl --kubeconfig=cluster.kubeconfig cluster-info
 ```
 
 ## Nutanix Cloud Controller Manager (CCM) and CSI Driver
@@ -618,11 +505,100 @@ These components can also be installed via ServiceTemplate resources for consist
 
 Always check the [CAPX compatibility matrix](https://github.com/nutanix-cloud-native/cluster-api-provider-nutanix/blob/main/docs/compatibility.md) for the latest supported versions.
 
+## Migration from Legacy Chart
+
+If you're currently using the deprecated `nutanix-capx` chart, here's how to migrate:
+
+### Migration Steps
+
+1. **Determine your mode**: Check your current values to see if you're using HCP or Standalone mode
+2. **Choose new chart**: Select `nutanix-capx-hcp` or `nutanix-capx-standalone`
+3. **Update values**: Map your configuration to the new chart format
+4. **Deploy new provider pack**: Install the appropriate provider pack
+5. **Deploy with new chart**: Create clusters using the new dedicated charts
+
+### Values Mapping
+
+| Legacy Chart Setting | HCP Chart | Standalone Chart |
+|---------------------|-----------|------------------|
+| `modes.hcp.enabled: true` | ✅ Default behavior | ❌ N/A |
+| `modes.standalone.enabled: true` | ❌ N/A | ✅ Default behavior |
+| `class.name.hcp` | `class.name` | ❌ N/A |
+| `class.name.standalone` | ❌ N/A | `class.name` |
+| `controlPlane.*` | ❌ N/A (no CP VMs) | ✅ Same |
+| `worker.*` | ✅ Same | ✅ Same |
+| `k0s.controlPlane.*` | ❌ N/A | ✅ Same |
+
+### Legacy Chart Commands
+
+```bash
+# OLD (deprecated)
+helm install nutanix-capx oci://ghcr.io/k0rdent-oot/oot/charts/nutanix-capx
+
+# NEW (recommended)
+# For HCP:
+helm install nutanix-pp-hcp oci://ghcr.io/k0rdent-oot/oot/charts/nutanix-pp-hcp
+
+# For Standalone:
+helm install nutanix-pp-standalone oci://ghcr.io/k0rdent-oot/oot/charts/nutanix-pp-standalone
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **VM creation failures**: 
+   - Verify Prism Central credentials
+   - Check image/cluster/subnet names exist
+   - Ensure sufficient resources available
+
+2. **Network issues**:
+   - Verify `controlPlaneEndpoint.host` is outside DHCP range
+   - Check firewall rules allow port 6443
+   - Ensure VMs can reach internet for k0s downloads
+
+3. **Join failures**:
+   - Check k0s service logs on VMs: `journalctl -u k0s*`
+   - Verify control plane endpoint is reachable from workers
+
+4. **Provider pack not found**:
+   - Ensure the correct provider pack is installed for your mode
+   - Check `kubectl get clustertemplate -A` for available templates
+
+### Debug Commands
+
+```bash
+# Cluster status
+clusterctl describe cluster <cluster-name> -n kcm-system
+
+# Machine details
+kubectl describe machine <machine-name> -n kcm-system
+kubectl describe nutanixmachine <machine-name> -n kcm-system
+
+# Control plane status (standalone)
+kubectl describe k0scontrolplane <cp-name> -n kcm-system
+
+# Get cluster kubeconfig
+clusterctl get kubeconfig <cluster-name> -n kcm-system > cluster.kubeconfig
+kubectl --kubeconfig=cluster.kubeconfig get nodes -o wide
+```
+
+### Cleanup
+
+```bash
+# Delete cluster
+kubectl delete clusterdeployment <cluster-name> -n kcm-system
+
+# Wait for cleanup
+kubectl get machine -n kcm-system  # Should show no machines
+
+# Verify VMs deleted in Nutanix Prism
+```
+
 ## Security Considerations
 
 - Use dedicated service accounts with minimal required permissions
 - Rotate Nutanix credentials regularly
-- Use per-cluster credentials for production environments
-- Enable TLS verification (set `insecure: false`)
-- Implement network segmentation between clusters
-- Use Nutanix categories for access control and monitoring
+- Enable TLS verification (`insecure: false`) in production
+- Use network policies to restrict cluster communication
+- Regular security updates for VM images
