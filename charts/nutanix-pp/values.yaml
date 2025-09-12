@@ -1,0 +1,18 @@
+# Nutanix CAPX Provider Configuration
+nutanixCapx:
+  enabled: true # @schema description: Enable Nutanix CAPX provider installation; type: boolean
+  version: "1.0.0" # @schema description: Version of the nutanix-capx chart; type: string
+
+# Cluster Template Configuration
+clusterTemplates: # @schema description: Cluster template configuration; type: object
+  hcp: # @schema description: HCP cluster template configuration; type: object
+    enabled: true # @schema description: Enable HCP cluster template; type: boolean
+    chartName: "nutanix-k0s-hcp" # @schema description: Name of the chart to use for HCP cluster template; type: string
+    version: "1.0.0" # @schema description: Version of the chart to use for HCP cluster template; type: string
+  standalone: # @schema description: Standalone cluster template configuration; type: object
+    enabled: true # @schema description: Enable standalone cluster template; type: boolean
+    chartName: "nutanix-k0s-standalone" # @schema description: Name of the chart to use for standalone cluster template; type: string
+    version: "1.0.0" # @schema description: Version of the chart to use for standalone cluster template; type: string
+
+config: # @schema description: Configuration settings; type: object
+  namespace: "" # @schema description: Namespace for objects; type: string

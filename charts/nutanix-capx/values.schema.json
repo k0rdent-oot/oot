@@ -1,0 +1,290 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Nutanix CAPX Configuration Schema",
+  "properties": {
+    "capx": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "CAPX controller manager/operator version"
+        },
+        "namespace": {
+          "type": "string",
+          "description": "Namespace for CAPX controller"
+        }
+      }
+    },
+    "nutanix": {
+      "type": "object",
+      "properties": {
+        "prismCentral": {
+          "type": "object",
+          "properties": {
+            "address": {
+              "type": "string",
+              "description": "Prism Central IP address or FQDN"
+            },
+            "port": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535,
+              "description": "Prism Central port"
+            },
+            "insecure": {
+              "type": "boolean",
+              "description": "Skip TLS verification"
+            },
+            "usePerClusterCredential": {
+              "type": "boolean",
+              "description": "Use per-cluster credentials instead of global"
+            },
+            "credentialSecretName": {
+              "type": "string",
+              "description": "Name of the credential secret"
+            }
+          }
+        },
+        "controlPlaneEndpoint": {
+          "type": "object",
+          "properties": {
+            "host": {
+              "type": "string",
+              "description": "VIP or static IP for control plane endpoint"
+            },
+            "port": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535,
+              "description": "Control plane endpoint port"
+            }
+          }
+        }
+      }
+    },
+    "machineDefaults": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["name", "uuid"]
+            },
+            "name": {
+              "type": "string"
+            },
+            "uuid": {
+              "type": "string"
+            }
+          }
+        },
+        "cluster": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string", 
+              "enum": ["name", "uuid"]
+            },
+            "name": {
+              "type": "string"
+            },
+            "uuid": {
+              "type": "string"
+            }
+          }
+        },
+        "subnets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["name", "uuid"]
+              },
+              "name": {
+                "type": "string"
+              },
+              "uuid": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "bootType": {
+          "type": "string",
+          "enum": ["legacy", "uefi"]
+        },
+        "vcpusPerSocket": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "vcpuSockets": {
+          "type": "integer", 
+          "minimum": 1
+        },
+        "memorySize": {
+          "type": "string"
+        },
+        "systemDiskSize": {
+          "type": "string"
+        },
+        "project": {
+          "type": ["string", "null"]
+        },
+        "additionalCategories": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "controlPlane": {
+      "type": "object",
+      "properties": {
+        "vcpuSockets": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "memorySize": {
+          "type": "string"
+        },
+        "systemDiskSize": {
+          "type": "string"
+        }
+      }
+    },
+    "worker": {
+      "type": "object", 
+      "properties": {
+        "vcpuSockets": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "memorySize": {
+          "type": "string"
+        },
+        "systemDiskSize": {
+          "type": "string"
+        }
+      }
+    },
+    "k0s": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "worker": {
+          "type": "object",
+          "properties": {
+            "labels": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "taints": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  },
+                  "effect": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "clusterNetwork": {
+      "type": "object",
+      "properties": {
+        "pods": {
+          "type": "object",
+          "properties": {
+            "cidrBlocks": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "services": {
+          "type": "object",
+          "properties": {
+            "cidrBlocks": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "modes": {
+      "type": "object",
+      "properties": {
+        "hcp": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            }
+          }
+        },
+        "standalone": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "clusterLabels": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "clusterAnnotations": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "machineHealthCheck": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "maxUnhealthy": {
+          "type": "string"
+        }
+      }
+    },
+    "objects": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  }
+}

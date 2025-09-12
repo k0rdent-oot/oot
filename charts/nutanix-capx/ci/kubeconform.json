@@ -1,0 +1,15 @@
+{
+  "summary": true,
+  "strict": true,
+  "ignoreMissingSchemas": false,
+  "skipTLS": false,
+  "skipKinds": [],
+  "rejectKinds": [],
+  "schemaLocations": [
+    "default",
+    "https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/v1.7.4/config/crd/bases",
+    "https://raw.githubusercontent.com/nutanix-cloud-native/cluster-api-provider-nutanix/v1.7.0/config/crd/bases",
+    "https://raw.githubusercontent.com/k0sproject/k0smotron/v1.0.6/config/crd/bases",
+    "https://raw.githubusercontent.com/Mirantis/k0rdent/v1.2.0/api/v1beta1"
+  ]
+}

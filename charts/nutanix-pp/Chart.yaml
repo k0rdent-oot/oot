@@ -1,0 +1,5 @@
+apiVersion: v2
+name: nutanix-pp
+description: A Nutanix Provider Pack for k0rdent with CAPX integration
+type: application
+version: 1.0.0

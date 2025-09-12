@@ -1,0 +1,235 @@
+{{- if .Values.modes.hcp.enabled }}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: ClusterClass
+metadata:
+  name: nutanix-k0s-hcp
+  namespace: {{ .Release.Namespace }}
+spec:
+  controlPlane:
+    ref:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+      kind: K0smotronControlPlane
+      namespace: {{ .Release.Namespace }}
+    machineInfrastructure:
+      ref:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: NutanixMachineTemplate
+        namespace: {{ .Release.Namespace }}
+  infrastructure:
+    ref:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: NutanixCluster
+      namespace: {{ .Release.Namespace }}
+  workers:
+    machineDeployments:
+    - class: default-worker
+      template:
+        bootstrap:
+          ref:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: K0sWorkerConfigTemplate
+            namespace: {{ .Release.Namespace }}
+        infrastructure:
+          ref:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: NutanixMachineTemplate
+            namespace: {{ .Release.Namespace }}
+  variables:
+  - name: nutanixClusterConfig
+    required: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          prismCentral:
+            type: object
+            properties:
+              address:
+                type: string
+                description: "Prism Central IP address or FQDN"
+              port:
+                type: integer
+                default: 9440
+                description: "Prism Central port"
+              insecure:
+                type: boolean
+                default: false
+                description: "Skip TLS verification"
+              credentialRef:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                description: "Reference to credential secret"
+          controlPlaneEndpoint:
+            type: object
+            properties:
+              host:
+                type: string
+                description: "VIP or static IP for control plane endpoint"
+              port:
+                type: integer
+                default: 6443
+                description: "Control plane endpoint port"
+            required: ["host"]
+  - name: nutanixMachineConfig
+    required: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          image:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: ["name", "uuid"]
+                default: "name"
+              name:
+                type: string
+              uuid:
+                type: string
+            description: "VM image reference"
+          cluster:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: ["name", "uuid"]
+                default: "name"
+              name:
+                type: string
+              uuid:
+                type: string
+            description: "Prism Element cluster reference"
+          subnets:
+            type: array
+            items:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum: ["name", "uuid"]
+                  default: "name"
+                name:
+                  type: string
+                uuid:
+                  type: string
+            description: "Network subnets"
+          bootType:
+            type: string
+            enum: ["legacy", "uefi"]
+            default: "legacy"
+          vcpusPerSocket:
+            type: integer
+            default: 1
+          vcpuSockets:
+            type: integer
+            default: 2
+          memorySize:
+            type: string
+            default: "4Gi"
+          systemDiskSize:
+            type: string
+            default: "40Gi"
+          project:
+            type: string
+            description: "Nutanix project name"
+          additionalCategories:
+            type: array
+            items:
+              type: string
+            description: "Additional Nutanix categories"
+  - name: k0sConfig
+    required: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          version:
+            type: string
+            default: "v1.29.2+k0s.0"
+          worker:
+            type: object
+            properties:
+              labels:
+                type: object
+                additionalProperties:
+                  type: string
+              taints:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    key:
+                      type: string
+                    value:
+                      type: string
+                    effect:
+                      type: string
+  patches:
+  - name: nutanixCluster
+    definitions:
+    - selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: NutanixCluster
+        matchResources:
+          infrastructureCluster: true
+      jsonPatches:
+      - op: add
+        path: "/spec/prismCentral"
+        valueFrom:
+          variable: nutanixClusterConfig
+          value: "prismCentral"
+      - op: add
+        path: "/spec/controlPlaneEndpoint"
+        valueFrom:
+          variable: nutanixClusterConfig
+          value: "controlPlaneEndpoint"
+  - name: nutanixWorkerMachineTemplate
+    definitions:
+    - selector:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: NutanixMachineTemplate
+        matchResources:
+          machineDeploymentClass:
+            names: ["default-worker"]
+      jsonPatches:
+      - op: add
+        path: "/spec/template/spec"
+        valueFrom:
+          variable: nutanixMachineConfig
+  - name: k0sWorkerConfig
+    definitions:
+    - selector:
+        apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+        kind: K0sWorkerConfigTemplate
+        matchResources:
+          machineDeploymentClass:
+            names: ["default-worker"]
+      jsonPatches:
+      - op: add
+        path: "/spec/template/spec/version"
+        valueFrom:
+          variable: k0sConfig
+          value: "version"
+      - op: add
+        path: "/spec/template/spec/args"
+        value: ["--enable-cloud-provider", "--kubelet-extra-args=--cloud-provider=external"]
+  - name: k0smotronControlPlane
+    definitions:
+    - selector:
+        apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+        kind: K0smotronControlPlane
+        matchResources:
+          controlPlane: true
+      jsonPatches:
+      - op: add
+        path: "/spec/version"
+        valueFrom:
+          variable: k0sConfig
+          value: "version"
+{{- end }}

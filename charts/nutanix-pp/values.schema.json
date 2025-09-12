@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Nutanix Provider Pack Configuration Schema",
+  "properties": {
+    "nutanixCapx": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable Nutanix CAPX provider installation"
+        },
+        "version": {
+          "type": "string",
+          "description": "Version of the nutanix-capx chart"
+        }
+      }
+    },
+    "clusterTemplates": {
+      "type": "object",
+      "properties": {
+        "hcp": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable HCP cluster template"
+            },
+            "chartName": {
+              "type": "string",
+              "description": "Name of the chart to use for HCP cluster template"
+            },
+            "version": {
+              "type": "string",
+              "description": "Version of the chart to use for HCP cluster template"
+            }
+          }
+        },
+        "standalone": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable standalone cluster template"
+            },
+            "chartName": {
+              "type": "string",
+              "description": "Name of the chart to use for standalone cluster template"
+            },
+            "version": {
+              "type": "string",
+              "description": "Version of the chart to use for standalone cluster template"
+            }
+          }
+        }
+      }
+    },
+    "config": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string",
+          "description": "Namespace for objects"
+        }
+      }
+    }
+  }
+}

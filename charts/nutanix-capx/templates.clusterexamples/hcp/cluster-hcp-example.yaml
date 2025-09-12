@@ -1,0 +1,97 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: {{ .Values.cluster.name | default .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- with .Values.clusterLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  annotations:
+    {{- with .Values.clusterAnnotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks: {{ .Values.clusterNetwork.pods.cidrBlocks | toYaml | nindent 8 }}
+    services:
+      cidrBlocks: {{ .Values.clusterNetwork.services.cidrBlocks | toYaml | nindent 8 }}
+  topology:
+    class: nutanix-k0s-hcp
+    version: {{ regexReplaceAll "\\+k0s.+$" .Values.k0s.version "" | quote }}
+    controlPlane:
+      metadata:
+        labels:
+          cluster.x-k8s.io/cluster-name: {{ .Values.cluster.name | default .Release.Name }}
+    workers:
+      machineDeployments:
+      - class: default-worker
+        name: worker-md
+        replicas: {{ .Values.workersNumber | default 1 }}
+        metadata:
+          labels:
+            cluster.x-k8s.io/cluster-name: {{ .Values.cluster.name | default .Release.Name }}
+            nodepool: worker-md
+    variables:
+    - name: nutanixClusterConfig
+      value:
+        prismCentral:
+          address: {{ .Values.nutanix.prismCentral.address | quote }}
+          port: {{ .Values.nutanix.prismCentral.port }}
+          insecure: {{ .Values.nutanix.prismCentral.insecure }}
+          {{- if .Values.nutanix.prismCentral.usePerClusterCredential }}
+          credentialRef:
+            name: {{ .Values.nutanix.prismCentral.credentialSecretName | quote }}
+            namespace: {{ .Release.Namespace }}
+          {{- end }}
+        controlPlaneEndpoint:
+          host: {{ .Values.nutanix.controlPlaneEndpoint.host | quote }}
+          port: {{ .Values.nutanix.controlPlaneEndpoint.port }}
+    - name: nutanixMachineConfig
+      value:
+        image:
+          type: {{ .Values.machineDefaults.image.type | quote }}
+          {{- if eq .Values.machineDefaults.image.type "name" }}
+          name: {{ .Values.machineDefaults.image.name | quote }}
+          {{- else }}
+          uuid: {{ .Values.machineDefaults.image.uuid | quote }}
+          {{- end }}
+        cluster:
+          type: {{ .Values.machineDefaults.cluster.type | quote }}
+          {{- if eq .Values.machineDefaults.cluster.type "name" }}
+          name: {{ .Values.machineDefaults.cluster.name | quote }}
+          {{- else }}
+          uuid: {{ .Values.machineDefaults.cluster.uuid | quote }}
+          {{- end }}
+        subnets:
+        {{- range .Values.machineDefaults.subnets }}
+        - type: {{ .type | quote }}
+          {{- if eq .type "name" }}
+          name: {{ .name | quote }}
+          {{- else }}
+          uuid: {{ .uuid | quote }}
+          {{- end }}
+        {{- end }}
+        bootType: {{ .Values.machineDefaults.bootType | quote }}
+        vcpusPerSocket: {{ .Values.worker.vcpuSockets | default .Values.machineDefaults.vcpusPerSocket }}
+        vcpuSockets: {{ .Values.worker.vcpuSockets | default .Values.machineDefaults.vcpuSockets }}
+        memorySize: {{ .Values.worker.memorySize | default .Values.machineDefaults.memorySize | quote }}
+        systemDiskSize: {{ .Values.worker.systemDiskSize | default .Values.machineDefaults.systemDiskSize | quote }}
+        {{- if .Values.machineDefaults.project }}
+        project: {{ .Values.machineDefaults.project | quote }}
+        {{- end }}
+        {{- if .Values.machineDefaults.additionalCategories }}
+        additionalCategories: {{ .Values.machineDefaults.additionalCategories | toYaml | nindent 10 }}
+        {{- end }}
+    - name: k0sConfig
+      value:
+        version: {{ .Values.k0s.version | quote }}
+        worker:
+          {{- if .Values.k0s.worker.labels }}
+          labels: {{ .Values.k0s.worker.labels | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.k0s.worker.taints }}
+          taints: {{ .Values.k0s.worker.taints | toYaml | nindent 12 }}
+          {{- end }}

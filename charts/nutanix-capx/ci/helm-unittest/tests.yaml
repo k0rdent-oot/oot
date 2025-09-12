@@ -1,0 +1,157 @@
+suite: Nutanix CAPX Provider Tests
+templates:
+  - templates/providertemplate-capx.yaml
+  - templates/providerinterface-capx.yaml
+  - templates/clusterclass-nutanix-k0s-hcp.yaml
+  - templates/clusterclass-nutanix-k0s-standalone.yaml
+  - templates/namespace-capx-system.yaml
+
+tests:
+  - it: should create ProviderTemplate with correct metadata
+    template: templates/providertemplate-capx.yaml
+    asserts:
+      - isKind:
+          of: ProviderTemplate
+      - equal:
+          path: metadata.name
+          value: cluster-api-provider-nutanix
+      - equal:
+          path: spec.providers[0].name
+          value: nutanix
+      - equal:
+          path: spec.providers[0].type
+          value: Infrastructure
+
+  - it: should create ProviderInterface with correct GVKs
+    template: templates/providerinterface-capx.yaml
+    asserts:
+      - isKind:
+          of: ProviderInterface
+      - equal:
+          path: metadata.name
+          value: cluster-api-provider-nutanix
+      - contains:
+          path: spec.clusterGVKs
+          content:
+            group: infrastructure.cluster.x-k8s.io
+            version: v1beta1
+            kind: NutanixCluster
+      - contains:
+          path: spec.exposedProviders
+          content: nutanix
+
+  - it: should create HCP ClusterClass when enabled
+    template: templates/clusterclass-nutanix-k0s-hcp.yaml
+    set:
+      modes.hcp.enabled: true
+    asserts:
+      - isKind:
+          of: ClusterClass
+      - equal:
+          path: metadata.name
+          value: nutanix-k0s-hcp
+      - equal:
+          path: spec.controlPlane.ref.kind
+          value: K0smotronControlPlane
+
+  - it: should not create HCP ClusterClass when disabled
+    template: templates/clusterclass-nutanix-k0s-hcp.yaml
+    set:
+      modes.hcp.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should create Standalone ClusterClass when enabled
+    template: templates/clusterclass-nutanix-k0s-standalone.yaml
+    set:
+      modes.standalone.enabled: true
+    asserts:
+      - isKind:
+          of: ClusterClass
+      - equal:
+          path: metadata.name
+          value: nutanix-k0s-standalone
+      - equal:
+          path: spec.controlPlane.ref.kind
+          value: K0sControlPlane
+
+  - it: should not create Standalone ClusterClass when disabled
+    template: templates/clusterclass-nutanix-k0s-standalone.yaml
+    set:
+      modes.standalone.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should create namespace with correct labels
+    template: templates/namespace-capx-system.yaml
+    asserts:
+      - isKind:
+          of: Namespace
+      - equal:
+          path: metadata.name
+          value: capx-system
+      - equal:
+          path: metadata.labels["cluster.x-k8s.io/provider"]
+          value: infrastructure-nutanix
+
+  - it: should have required variables in HCP ClusterClass
+    template: templates/clusterclass-nutanix-k0s-hcp.yaml
+    set:
+      modes.hcp.enabled: true
+    asserts:
+      - contains:
+          path: spec.variables
+          content:
+            name: nutanixClusterConfig
+            required: true
+      - contains:
+          path: spec.variables
+          content:
+            name: nutanixMachineConfig
+            required: true
+      - contains:
+          path: spec.variables
+          content:
+            name: k0sConfig
+            required: true
+
+  - it: should have required variables in Standalone ClusterClass
+    template: templates/clusterclass-nutanix-k0s-standalone.yaml
+    set:
+      modes.standalone.enabled: true
+    asserts:
+      - contains:
+          path: spec.variables
+          content:
+            name: nutanixClusterConfig
+            required: true
+      - contains:
+          path: spec.variables
+          content:
+            name: nutanixMachineConfig
+            required: true
+      - contains:
+          path: spec.variables
+          content:
+            name: k0sConfig
+            required: true
+
+  - it: should use custom CAPX version
+    template: templates/providertemplate-capx.yaml
+    set:
+      capx.version: v1.8.0
+    asserts:
+      - equal:
+          path: spec.providers[0].version
+          value: v1.8.0
+
+  - it: should use custom namespace
+    template: templates/namespace-capx-system.yaml
+    set:
+      capx.namespace: custom-capx-ns
+    asserts:
+      - equal:
+          path: metadata.name
+          value: custom-capx-ns

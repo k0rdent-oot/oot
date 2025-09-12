@@ -1,0 +1,18 @@
+{{- if .Values.nutanixCapx.enabled }}
+---
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: ProviderTemplate
+metadata:
+  name: cluster-api-provider-nutanix-{{ .Values.nutanixCapx.version | replace "." "-" }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  helm:
+    chartSpec:
+      chart: nutanix-capx
+      version: {{ .Values.nutanixCapx.version | quote }}
+      interval: 10m0s
+      sourceRef:
+        kind: HelmRepository
+        name: oot-repo
+{{- end }}
