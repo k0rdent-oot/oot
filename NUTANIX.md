@@ -5,14 +5,32 @@ The Nutanix provider for k0rdent enables deployment of Kubernetes clusters on Nu
 - **🏗️ Hosted Control Plane (HCP)**: Control plane runs as pods in the management cluster using k0smotron
 - **🖥️ Standalone**: Control plane runs on dedicated Nutanix VMs
 
-## Chart Selection
+## Chart Selection Guide
 
-| Mode | Chart | Provider Pack | Use Case |
-|------|-------|---------------|----------|
-| **HCP** | [`nutanix-capx-hcp`](charts/nutanix-capx-hcp/) | [`nutanix-pp-hcp`](charts/nutanix-pp-hcp/) | Managed control plane, faster scaling, shared management |
-| **Standalone** | [`nutanix-capx-standalone`](charts/nutanix-capx-standalone/) | [`nutanix-pp-standalone`](charts/nutanix-pp-standalone/) | Full VM-based cluster, traditional deployment |
+Choose the appropriate chart based on your deployment requirements:
 
-> **Note**: The combined `nutanix-capx` chart is deprecated. Use the dedicated charts above for new deployments.
+| Mode | Chart | Provider Pack | Use Case | When to Choose |
+|------|-------|---------------|----------|----------------|
+| **🏗️ HCP** | [`nutanix-capx-hcp`](charts/nutanix-capx-hcp/) | [`nutanix-pp-hcp`](charts/nutanix-pp-hcp/) | Managed control plane, faster scaling, shared management | ✅ **Development/Testing**<br/>✅ **Multi-tenant environments**<br/>✅ **Fast worker scaling needs**<br/>✅ **Minimal VM resource usage** |
+| **🖥️ Standalone** | [`nutanix-capx-standalone`](charts/nutanix-capx-standalone/) | [`nutanix-pp-standalone`](charts/nutanix-pp-standalone/) | Full VM-based cluster, traditional deployment | ✅ **Production workloads**<br/>✅ **Network isolation requirements**<br/>✅ **Traditional k8s cluster model**<br/>✅ **Full control over control plane** |
+
+### Decision Matrix
+
+**Choose HCP when:**
+- Control plane pods in management cluster are acceptable
+- You need fast worker node scaling (no VM boot time for CP)
+- Resource efficiency is important (shared CP overhead)
+- You're running development/testing workloads
+
+**Choose Standalone when:**
+- You need complete cluster isolation (including control plane)
+- Network policies require VM-to-VM control plane communication
+- Production workloads require traditional cluster architecture
+- You want full control over control plane sizing and placement
+
+> **⚠️ Important**: The combined `nutanix-capx` chart is deprecated. Use the dedicated charts above for new deployments.
+
+> **💡 Migration**: See the [Migration Guide](#migration-from-legacy-chart) below for moving from the legacy combined chart.
 
 ## Prerequisites
 

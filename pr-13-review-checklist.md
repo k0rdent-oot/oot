@@ -12,15 +12,15 @@ Based on typical OOT provider chart reviews and alignment with upstream patterns
 | `charts/nutanix-capx-standalone/Chart.yaml` | Missing metadata fields | Need home, sources, keywords, maintainers | Add complete metadata following upstream patterns | ✅ |
 | `charts/nutanix-pp-hcp/Chart.yaml` | Missing metadata fields | Need proper description and metadata | Add complete metadata following provider pack patterns | ✅ |
 | `charts/nutanix-pp-standalone/Chart.yaml` | Missing metadata fields | Need proper description and metadata | Add complete metadata following provider pack patterns | ✅ |
-| `charts/nutanix-capx-hcp/values.yaml` | Missing schema comments | Need @schema annotations for all fields | Add comprehensive schema annotations | ⏳ |
-| `charts/nutanix-capx-standalone/values.yaml` | Missing schema comments | Need @schema annotations for all fields | Add comprehensive schema annotations | ⏳ |
+| `charts/nutanix-capx-hcp/values.yaml` | Missing schema comments | Need @schema annotations for all fields | Add comprehensive schema annotations | ✅ |
+| `charts/nutanix-capx-standalone/values.yaml` | Missing schema comments | Need @schema annotations for all fields | Add comprehensive schema annotations | ✅ |
 | `charts/nutanix-capx-standalone/values.schema.json` | Missing schema file | Standalone chart needs values.schema.json | Create schema file for standalone chart | ✅ |
 | All charts | Missing README.md | Charts need individual READMEs | Create README.md for each chart with scope/usage | ✅ |
-| `NUTANIX.md` | Missing chart selection guide | Need clear guidance on when to use which chart | Enhance with clearer chart selection section | ⏳ |
-| Provider packs | Labels/annotations alignment | Need to match upstream provider pack patterns | Align labels and annotations with kubevirt-pp | ⏳ |
-| CI workflows | Coverage gaps | Need to validate all charts properly | Enhance matrix testing and validation | ⏳ |
-| Templates | Template naming | Ensure consistent naming across charts | Validate template name helpers are correct | ⏳ |
-| ClusterClasses | v1beta2 compliance | Ensure all use templateRef correctly | Validate CAPI v1beta2 compliance | ⏳ |
+| `NUTANIX.md` | Missing chart selection guide | Need clear guidance on when to use which chart | Enhance with clearer chart selection section | ✅ |
+| Provider packs | Labels/annotations alignment | Need to match upstream provider pack patterns | Align labels and annotations with kubevirt-pp | ✅ |
+| CI workflows | Coverage gaps | Need to validate all charts properly | Enhance matrix testing and validation | ✅ |
+| Templates | Template naming | Ensure consistent naming across charts | Validate template name helpers are correct | ✅ |
+| ClusterClasses | v1beta2 compliance | Ensure all use templateRef correctly | Validate CAPI v1beta2 compliance | ✅ |
 
 ## Global Actions Required
 
