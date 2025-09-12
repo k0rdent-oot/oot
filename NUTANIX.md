@@ -57,7 +57,7 @@ There are two options for providing Nutanix credentials to CAPX:
 
 ### Option 1: Global Credentials (Recommended)
 
-Create a global credential secret that will be used by all clusters:
+Create a global credential secret that will be used by all clusters. This is auto-injected by CAPX:
 
 ```bash
 kubectl apply -f - <<EOF
@@ -67,6 +67,8 @@ kind: Secret
 metadata:
   name: nutanix-creds
   namespace: capx-system
+  labels:
+    cluster.x-k8s.io/provider: infrastructure-nutanix
 stringData:
   credentials: |
     [
@@ -86,7 +88,7 @@ EOF
 
 ### Option 2: Per-Cluster Credentials
 
-Create a credential secret for each cluster deployment:
+Create a credential secret for each cluster deployment and configure the chart to use it:
 
 ```bash
 kubectl apply -f - <<EOF
@@ -96,6 +98,8 @@ kind: Secret
 metadata:
   name: nutanix-cluster-creds
   namespace: kcm-system
+  labels:
+    cluster.x-k8s.io/provider: infrastructure-nutanix
 stringData:
   credentials: |
     [
@@ -124,6 +128,43 @@ spec:
     name: nutanix-cluster-creds
     namespace: kcm-system
 EOF
+```
+
+**To use per-cluster credentials**, set these values in your deployment:
+
+```yaml
+nutanix:
+  prismCentral:
+    usePerClusterCredential: true
+    credentialSecretName: "nutanix-cluster-creds"
+```
+
+### Option 3: Additional Trust Bundle (for Custom CA)
+
+If using custom CA certificates for Prism Central:
+
+```bash
+kubectl apply -f - <<EOF
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nutanix-ca-bundle
+  namespace: kcm-system
+data:
+  ca-bundle.crt: |
+    -----BEGIN CERTIFICATE-----
+    # Your custom CA certificate here
+    -----END CERTIFICATE-----
+EOF
+```
+
+Then configure:
+
+```yaml
+nutanix:
+  prismCentral:
+    additionalTrustBundleConfigMapName: "nutanix-ca-bundle"
 ```
 
 ## Cluster Deployment Modes
@@ -162,6 +203,27 @@ The chart creates the following Template resources with deterministic names:
 - `NutanixCluster`: `<release-name>-cluster`
 
 ClusterClasses reference these templates via `templateRef.name` (not `ref`), following CAPI v1beta2 best practices.
+
+### **Object Graph per Mode**
+
+**HCP Mode Resources Created:**
+- `ClusterClass` (nutanix-k0s-hcp)
+- `K0smotronControlPlaneTemplate` (hosted control plane)
+- `K0sWorkerConfigTemplate` (worker bootstrap)
+- `NutanixMachineTemplate` (worker VMs only)
+- `NutanixCluster` (cluster infrastructure)
+- `ProviderTemplate` + `ProviderInterface` (CAPX installation)
+
+**Standalone Mode Resources Created:**
+- `ClusterClass` (nutanix-k0s-standalone)
+- `K0sControlPlaneTemplate` (VM-based control plane)
+- `NutanixMachineTemplate` (control plane VMs)
+- `K0sWorkerConfigTemplate` (worker bootstrap)
+- `NutanixMachineTemplate` (worker VMs)
+- `NutanixCluster` (cluster infrastructure)
+- `ProviderTemplate` + `ProviderInterface` (CAPX installation)
+
+**⚠️ Important:** The `controlPlaneEndpoint.host` must be reachable from all nodes and **must not collide with DHCP/IPAM pools**. Reserve this IP outside your Nutanix IPAM range.
 
 ## Deploy a Hosted Control Plane (HCP) Cluster
 
@@ -489,24 +551,64 @@ kubectl delete nutanixmachine <machine-name> -n kcm-system
 
 ## Nutanix Cloud Controller Manager (CCM) and CSI Driver
 
-After cluster deployment, you may want to install Nutanix-specific components:
+**⚠️ Don't Forget:** After cluster deployment, you **must** install Nutanix-specific components for full functionality:
 
 ### CCM for Load Balancer Services
-The Nutanix CCM provides load balancer integration for Kubernetes services.
+The Nutanix CCM provides load balancer integration for Kubernetes services and enables proper node management.
 
 ### CSI Driver for Persistent Volumes
 The Nutanix CSI driver enables dynamic provisioning of persistent volumes backed by Nutanix storage.
 
-These components can be installed post-deployment using Helm charts or via k0s configuration in the cluster specification.
+### Installation Options
+
+**Option 1: Via k0s configuration in ClusterDeployment**
+Add to your ClusterDeployment spec.config:
+
+```yaml
+k0s:
+  config:
+    spec:
+      extensions:
+        helm:
+          repositories:
+            - name: nutanix
+              url: https://nutanix.github.io/helm/
+          charts:
+            - name: nutanix-csi-storage
+              chartname: nutanix/nutanix-csi-storage
+              namespace: ntnx-system
+              version: "3.0.0"
+            - name: nutanix-cloud-controller-manager
+              chartname: nutanix/nutanix-cloud-controller-manager  
+              namespace: kube-system
+              version: "0.3.0"
+```
+
+**Option 2: Post-deployment via Helm**
+```bash
+helm repo add nutanix https://nutanix.github.io/helm/
+helm install nutanix-csi nutanix/nutanix-csi-storage -n ntnx-system --create-namespace
+helm install nutanix-ccm nutanix/nutanix-cloud-controller-manager -n kube-system
+```
+
+These components can also be installed via ServiceTemplate resources for consistent management.
 
 ## Version Compatibility
 
-- **CAPI Core**: v1.8.x (required for v1beta2 ClusterClass support)
-- **CAPX Provider**: v1.7.0
-- **k0s**: v1.29.2+k0s.0 (adjustable)
-- **k0smotron**: v1.0.6+ (for K0smotronControlPlaneTemplate support)
+### Known Good Versions (Tested in CI)
 
-**Template API Versions Used:**
+| Component | Version | Notes |
+|-----------|---------|-------|
+| CAPI Core | v1.8.4 | Required for v1beta2 ClusterClass support |
+| CAPX | v1.7.0 | Nutanix infrastructure provider |
+| k0smotron | v1.0.6 | For K0smotronControlPlaneTemplate support |
+| k0s | v1.29.2+k0s.0 | Configurable via values.yaml |
+| Kubernetes | v1.29.x | Cluster version (derived from k0s) |
+
+**Use these versions together; mixing other minors may work but is not tested by this chart's CI.**
+
+### Template API Versions Used
+
 - ClusterClass: `cluster.x-k8s.io/v1beta2`
 - K0smotronControlPlaneTemplate: `controlplane.cluster.x-k8s.io/v1beta1`
 - K0sControlPlaneTemplate: `controlplane.cluster.x-k8s.io/v1beta1`

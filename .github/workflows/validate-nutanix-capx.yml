@@ -150,6 +150,34 @@ jobs:
           echo "Checking Standalone has machineInfrastructure on control plane..."
           grep -A10 "controlPlane:" standalone-output.yaml | grep -q "machineInfrastructure"
 
+      - name: Test mode XOR validation (negative test)
+        run: |
+          echo "Testing schema validation fails when both modes enabled..."
+          # This should FAIL with non-zero exit due to schema validation
+          if helm template nutanix-capx charts/nutanix-capx -f charts/nutanix-capx/ci/test-values-both-modes.yaml --namespace kcm-system > /dev/null 2>&1; then
+            echo "ERROR: Schema validation should have failed but didn't!"
+            exit 1
+          else
+            echo "✅ Schema correctly rejected both modes enabled"
+          fi
+
+      - name: Test provider pack rendering
+        run: |
+          echo "Testing provider pack renders correctly..."
+          helm template nutanix-pp charts/nutanix-pp --namespace kcm-system > provider-pack-output.yaml
+          
+          # Check for required objects
+          grep -q "kind: ProviderTemplate" provider-pack-output.yaml
+          grep -q "kind: ProviderInterface" provider-pack-output.yaml
+          grep -q "kind: ClusterTemplate" provider-pack-output.yaml
+          
+          # Check for proper naming
+          grep -q "cluster-api-provider-nutanix" provider-pack-output.yaml
+          grep -q "nutanix-k0s-hcp" provider-pack-output.yaml
+          grep -q "nutanix-k0s-standalone" provider-pack-output.yaml
+          
+          echo "✅ Provider pack renders correctly"
+
       - name: Validate cluster examples
         run: |
           echo "Validating HCP cluster example..."
@@ -181,6 +209,7 @@ jobs:
             hcp-output.yaml
             standalone-output.yaml
             both-modes-output.yaml
+            provider-pack-output.yaml
             hcp-cluster-example.yaml
             standalone-cluster-example.yaml
 

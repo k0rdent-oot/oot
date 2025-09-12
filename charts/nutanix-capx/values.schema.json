@@ -1,5 +1,5 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft-07/schema",
   "type": "object",
   "title": "Nutanix CAPX Configuration Schema",
   "properties": {
@@ -253,57 +253,24 @@
           "type": "object",
           "properties": {
             "enabled": {
-              "type": "boolean"
+              "type": "boolean",
+              "default": false
             }
-          }
+          },
+          "required": ["enabled"]
         },
         "standalone": {
           "type": "object",
           "properties": {
             "enabled": {
-              "type": "boolean"
+              "type": "boolean",
+              "default": false
             }
-          }
+          },
+          "required": ["enabled"]
         }
       },
-      "oneOf": [
-        {
-          "properties": {
-            "hcp": {
-              "properties": {
-                "enabled": {
-                  "const": true
-                }
-              }
-            },
-            "standalone": {
-              "properties": {
-                "enabled": {
-                  "const": false
-                }
-              }
-            }
-          }
-        },
-        {
-          "properties": {
-            "hcp": {
-              "properties": {
-                "enabled": {
-                  "const": false
-                }
-              }
-            },
-            "standalone": {
-              "properties": {
-                "enabled": {
-                  "const": true
-                }
-              }
-            }
-          }
-        }
-      ]
+      "required": ["hcp", "standalone"]
     },
     "class": {
       "type": "object",
@@ -350,5 +317,51 @@
         "type": "object"
       }
     }
-  }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "modes": {
+          "properties": {
+            "hcp": {
+              "properties": {
+                "enabled": {
+                  "const": true
+                }
+              }
+            },
+            "standalone": {
+              "properties": {
+                "enabled": {
+                  "const": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "modes": {
+          "properties": {
+            "hcp": {
+              "properties": {
+                "enabled": {
+                  "const": false
+                }
+              }
+            },
+            "standalone": {
+              "properties": {
+                "enabled": {
+                  "const": true
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

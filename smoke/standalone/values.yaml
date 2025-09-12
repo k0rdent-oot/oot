@@ -1,0 +1,65 @@
+# Smoke test values for Standalone mode
+# Replace CHANGE_ME values with your actual Nutanix environment details
+
+nutanix:
+  prismCentral:
+    address: "CHANGE_ME_PC_IP"  # e.g., "10.1.1.100"
+    port: 9440
+    insecure: false
+    usePerClusterCredential: false  # Uses global capx-system/nutanix-creds
+    # credentialSecretName: ""  # Only if usePerClusterCredential: true
+  
+  controlPlaneEndpoint:
+    host: "CHANGE_ME_VIP_IP"  # e.g., "10.1.1.201" - OUTSIDE DHCP range!
+    port: 6443
+
+machineDefaults:
+  image:
+    type: name
+    name: "CHANGE_ME_IMAGE_NAME"  # e.g., "ubuntu-22.04-k0s"
+  cluster:
+    type: name  
+    name: "CHANGE_ME_PE_CLUSTER"  # e.g., "PE-Cluster-01"
+  subnets:
+    - type: name
+      name: "CHANGE_ME_SUBNET"  # e.g., "VM-Network"
+  bootType: legacy
+  vcpusPerSocket: 1
+  vcpuSockets: 2
+  memorySize: "4Gi"
+  systemDiskSize: "40Gi"
+  # project: "CHANGE_ME_PROJECT"  # Optional
+  # additionalCategories: ["k0s", "test"]  # Optional
+
+controlPlane:
+  vcpuSockets: 4
+  memorySize: "8Gi"
+  systemDiskSize: "80Gi"
+
+worker:
+  vcpuSockets: 2
+  memorySize: "4Gi" 
+  systemDiskSize: "40Gi"
+
+k0s:
+  version: "v1.29.2+k0s.0"
+  worker:
+    labels:
+      node-role.kubernetes.io/worker: ""
+
+clusterNetwork:
+  pods:
+    cidrBlocks: ["10.243.0.0/16"]
+  services:
+    cidrBlocks: ["10.95.0.0/16"]
+
+modes:
+  hcp:
+    enabled: false
+  standalone:
+    enabled: true
+
+class:
+  name:
+    hcp: "nutanix-k0s-hcp"
+    standalone: "nutanix-k0s-standalone"
