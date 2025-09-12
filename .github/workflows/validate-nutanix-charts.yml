@@ -147,6 +147,7 @@ jobs:
           # Check for required objects
           grep -q "kind: ProviderTemplate" provider-pack-output.yaml
           grep -q "kind: ProviderInterface" provider-pack-output.yaml
+          grep -q "kind: ClusterTemplate" provider-pack-output.yaml
           
           # Check for proper naming
           if [[ "${{ matrix.chart.name }}" == *"hcp"* ]]; then

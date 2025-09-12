@@ -1,15 +1,16 @@
 ---
 apiVersion: k0rdent.mirantis.com/v1beta1
-kind: ProviderTemplate
+kind: ClusterTemplate
 metadata:
-  name: cluster-api-provider-nutanix-hcp-{{ .Values.chartVersion | replace "." "-" }}
+  name: nutanix-k0s-hcp-{{ .Values.chartVersion | replace "." "-" }}
+  namespace: {{ .Release.Namespace }}
   annotations:
     helm.sh/resource-policy: keep
 spec:
   helm:
     chartSpec:
-      chart: cluster-api-provider-nutanix
-      version: {{ .Values.capxVersion | default "1.5.0" | quote }}
+      chart: nutanix-capx-hcp
+      version: {{ .Values.chartVersion | quote }}
       interval: 10m0s
       sourceRef:
         kind: HelmRepository

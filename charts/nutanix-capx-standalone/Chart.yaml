@@ -5,6 +5,21 @@ description: |
 type: application
 version: 0.1.0
 appVersion: "v1.7.0"
+home: https://github.com/k0rdent-oot/oot
+sources:
+  - https://github.com/k0rdent-oot/oot
+  - https://github.com/nutanix-cloud-native/cluster-api-provider-nutanix
+keywords:
+  - k0rdent
+  - oot
+  - capi
+  - nutanix
+  - capx
+  - standalone
+  - k0s
+maintainers:
+  - name: k0rdent-oot maintainers
+    url: https://github.com/k0rdent-oot/oot
 annotations:
   cluster.x-k8s.io/provider: infrastructure-nutanix, control-plane-k0sproject-k0smotron, bootstrap-k0sproject-k0smotron
   k0rdent.mirantis.com/type: deployment
