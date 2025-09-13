@@ -1,3 +1,4 @@
+{{- if .Values.providerTemplate.enabled }}
 ---
 apiVersion: k0rdent.mirantis.com/v1beta1
 kind: ProviderTemplate
@@ -23,3 +24,4 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: oot-repo
+{{- end }}

@@ -14,6 +14,12 @@ on:
       - 'NUTANIX.md'
       - 'smoke/**'
 
+env:
+  CAPI_VERSION: v1.8.4
+  CAPX_VERSION: v1.7.0
+  K0SMOTRON_VERSION: v1.0.6
+  K0S_VERSION: v1.33.4+k0s.0
+
 jobs:
   validate-charts:
     runs-on: ubuntu-latest
@@ -56,23 +62,24 @@ jobs:
       - name: Download CRDs
         if: matrix.chart.type != 'provider-pack'
         run: |
+          echo "Using versions: CAPI=${{ env.CAPI_VERSION }}, CAPX=${{ env.CAPX_VERSION }}, k0smotron=${{ env.K0SMOTRON_VERSION }}"
           mkdir -p crds/
           
-          # CAPI Core CRDs (v1.8.x for v1beta2 support)
-          curl -s https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/v1.8.4/config/crd/bases/cluster.x-k8s.io_clusters.yaml > crds/cluster.x-k8s.io_clusters.yaml
-          curl -s https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/v1.8.4/config/crd/bases/cluster.x-k8s.io_clusterclasses.yaml > crds/cluster.x-k8s.io_clusterclasses.yaml
-          curl -s https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/v1.8.4/config/crd/bases/cluster.x-k8s.io_machinedeployments.yaml > crds/cluster.x-k8s.io_machinedeployments.yaml
-          curl -s https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/v1.8.4/config/crd/bases/cluster.x-k8s.io_machines.yaml > crds/cluster.x-k8s.io_machines.yaml
+          # CAPI Core CRDs
+          curl -s https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/${{ env.CAPI_VERSION }}/config/crd/bases/cluster.x-k8s.io_clusters.yaml > crds/cluster.x-k8s.io_clusters.yaml
+          curl -s https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/${{ env.CAPI_VERSION }}/config/crd/bases/cluster.x-k8s.io_clusterclasses.yaml > crds/cluster.x-k8s.io_clusterclasses.yaml
+          curl -s https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/${{ env.CAPI_VERSION }}/config/crd/bases/cluster.x-k8s.io_machinedeployments.yaml > crds/cluster.x-k8s.io_machinedeployments.yaml
+          curl -s https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/${{ env.CAPI_VERSION }}/config/crd/bases/cluster.x-k8s.io_machines.yaml > crds/cluster.x-k8s.io_machines.yaml
           
           # CAPX CRDs
-          curl -s https://raw.githubusercontent.com/nutanix-cloud-native/cluster-api-provider-nutanix/v1.7.0/config/crd/bases/infrastructure.cluster.x-k8s.io_nutanixclusters.yaml > crds/infrastructure.cluster.x-k8s.io_nutanixclusters.yaml
-          curl -s https://raw.githubusercontent.com/nutanix-cloud-native/cluster-api-provider-nutanix/v1.7.0/config/crd/bases/infrastructure.cluster.x-k8s.io_nutanixmachinetemplates.yaml > crds/infrastructure.cluster.x-k8s.io_nutanixmachinetemplates.yaml
-          curl -s https://raw.githubusercontent.com/nutanix-cloud-native/cluster-api-provider-nutanix/v1.7.0/config/crd/bases/infrastructure.cluster.x-k8s.io_nutanixmachines.yaml > crds/infrastructure.cluster.x-k8s.io_nutanixmachines.yaml
+          curl -s https://raw.githubusercontent.com/nutanix-cloud-native/cluster-api-provider-nutanix/${{ env.CAPX_VERSION }}/config/crd/bases/infrastructure.cluster.x-k8s.io_nutanixclusters.yaml > crds/infrastructure.cluster.x-k8s.io_nutanixclusters.yaml
+          curl -s https://raw.githubusercontent.com/nutanix-cloud-native/cluster-api-provider-nutanix/${{ env.CAPX_VERSION }}/config/crd/bases/infrastructure.cluster.x-k8s.io_nutanixmachinetemplates.yaml > crds/infrastructure.cluster.x-k8s.io_nutanixmachinetemplates.yaml
+          curl -s https://raw.githubusercontent.com/nutanix-cloud-native/cluster-api-provider-nutanix/${{ env.CAPX_VERSION }}/config/crd/bases/infrastructure.cluster.x-k8s.io_nutanixmachines.yaml > crds/infrastructure.cluster.x-k8s.io_nutanixmachines.yaml
           
           # k0s/k0smotron CRDs
-          curl -s https://raw.githubusercontent.com/k0sproject/k0smotron/v1.0.6/config/crd/bases/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml > crds/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml
-          curl -s https://raw.githubusercontent.com/k0sproject/k0smotron/v1.0.6/config/crd/bases/controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml > crds/controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml
-          curl -s https://raw.githubusercontent.com/k0sproject/k0smotron/v1.0.6/config/crd/bases/bootstrap.cluster.x-k8s.io_k0sworkerconfigtemplates.yaml > crds/bootstrap.cluster.x-k8s.io_k0sworkerconfigtemplates.yaml
+          curl -s https://raw.githubusercontent.com/k0sproject/k0smotron/${{ env.K0SMOTRON_VERSION }}/config/crd/bases/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml > crds/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml
+          curl -s https://raw.githubusercontent.com/k0sproject/k0smotron/${{ env.K0SMOTRON_VERSION }}/config/crd/bases/controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml > crds/controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml
+          curl -s https://raw.githubusercontent.com/k0sproject/k0smotron/${{ env.K0SMOTRON_VERSION }}/config/crd/bases/bootstrap.cluster.x-k8s.io_k0sworkerconfigtemplates.yaml > crds/bootstrap.cluster.x-k8s.io_k0sworkerconfigtemplates.yaml
           
           # k0rdent CRDs
           curl -s https://raw.githubusercontent.com/Mirantis/k0rdent/v1.2.0/api/v1beta1/providertemplate.yaml > crds/k0rdent.mirantis.com_providertemplates.yaml
@@ -199,13 +206,14 @@ jobs:
 
       - name: Download CRDs
         run: |
+          echo "Using versions: CAPI=${{ env.CAPI_VERSION }}, CAPX=${{ env.CAPX_VERSION }}, k0smotron=${{ env.K0SMOTRON_VERSION }}"
           mkdir -p crds/
           
           # Download the same CRDs as matrix job
-          curl -s https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/v1.8.4/config/crd/bases/cluster.x-k8s.io_clusterclasses.yaml > crds/cluster.x-k8s.io_clusterclasses.yaml
-          curl -s https://raw.githubusercontent.com/nutanix-cloud-native/cluster-api-provider-nutanix/v1.7.0/config/crd/bases/infrastructure.cluster.x-k8s.io_nutanixclusters.yaml > crds/infrastructure.cluster.x-k8s.io_nutanixclusters.yaml
-          curl -s https://raw.githubusercontent.com/k0sproject/k0smotron/v1.0.6/config/crd/bases/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml > crds/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml
-          curl -s https://raw.githubusercontent.com/k0sproject/k0smotron/v1.0.6/config/crd/bases/controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml > crds/controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml
+          curl -s https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/${{ env.CAPI_VERSION }}/config/crd/bases/cluster.x-k8s.io_clusterclasses.yaml > crds/cluster.x-k8s.io_clusterclasses.yaml
+          curl -s https://raw.githubusercontent.com/nutanix-cloud-native/cluster-api-provider-nutanix/${{ env.CAPX_VERSION }}/config/crd/bases/infrastructure.cluster.x-k8s.io_nutanixclusters.yaml > crds/infrastructure.cluster.x-k8s.io_nutanixclusters.yaml
+          curl -s https://raw.githubusercontent.com/k0sproject/k0smotron/${{ env.K0SMOTRON_VERSION }}/config/crd/bases/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml > crds/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml
+          curl -s https://raw.githubusercontent.com/k0sproject/k0smotron/${{ env.K0SMOTRON_VERSION }}/config/crd/bases/controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml > crds/controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml
 
       - name: Test legacy chart both modes (for compatibility)
         run: |

@@ -6,6 +6,10 @@ capx:
   version: v1.7.0 # @schema description: CAPX controller manager/operator version; type: string
   namespace: capx-system # @schema description: Namespace for CAPX controller; type: string
 
+# Provider template configuration
+providerTemplate: # @schema description: ProviderTemplate configuration; type: object
+  enabled: true # @schema description: Enable ProviderTemplate emission; type: boolean
+
 # Nutanix infrastructure configuration
 nutanix: # @schema description: Nutanix Prism Central and cluster configuration; type: object
   prismCentral: # @schema description: Prism Central connection settings; type: object
@@ -57,13 +61,30 @@ worker: # @schema description: Worker node specific machine configuration; type:
 
 # k0s configuration
 k0s: # @schema description: k0s configuration parameters; type: object
-  version: v1.29.2+k0s.0 # @schema description: k0s version; type: string
+  version: v1.33.4+k0s.0 # @schema description: k0s version; type: string
   args: [] # @schema description: Additional k0s args; type: array; items: string
   controlPlane: # @schema description: Control plane k0s configuration; type: object
     replicas: 3 # @schema description: Number of control plane replicas; type: number; minimum: 1
+    args: [] # @schema description: Additional control plane k0s args; type: array; items: string
   worker: # @schema description: Worker node k0s configuration; type: object
     labels: {} # @schema description: Labels to apply to worker nodes; type: object; additionalProperties: true
     taints: [] # @schema description: Taints to apply to worker nodes; type: array
+  calico: # @schema description: Calico network configuration; type: object
+    mode: "vxlan" # @schema description: Calico mode; type: string; enum: ["", "ipip", "vxlan", "bgp"]
+    mtu: null # @schema description: Calico MTU; type: [number, null]
+    ipPools: # @schema description: Calico IP pools; type: array
+      - cidr: "10.244.0.0/16" # @schema description: IP pool CIDR; type: string
+        encapsulation: "VXLANCrossSubnet" # @schema description: Encapsulation type; type: string
+        natOutgoing: "Enabled" # @schema description: NAT outgoing; type: string
+        nodeSelector: "all()" # @schema description: Node selector; type: string
+    typha: # @schema description: Typha configuration; type: object
+      enabled: false # @schema description: Enable Typha; type: boolean
+
+# Network configuration
+network: # @schema description: Cluster network configuration; type: object
+  provider: "calico" # @schema description: Network provider; type: string; enum: ["calico", "kube-router", "custom"]
+  podCIDR: "10.244.0.0/16" # @schema description: Pod CIDR; type: string
+  serviceCIDR: "10.96.0.0/12" # @schema description: Service CIDR; type: string
 
 # Cluster network configuration
 clusterNetwork: # @schema description: Cluster network configuration; type: object

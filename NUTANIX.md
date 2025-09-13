@@ -507,7 +507,7 @@ These components can also be installed via ServiceTemplate resources for consist
 | CAPI Core | v1.8.4 | Required for v1beta2 ClusterClass support |
 | CAPX | v1.7.0 | Nutanix infrastructure provider |
 | k0smotron | v1.0.6 | For K0smotronControlPlaneTemplate support |
-| k0s | v1.29.2+k0s.0 | Configurable via values.yaml |
+| k0s | v1.33.4+k0s.0 | Configurable via values.yaml |
 | Kubernetes | v1.29.x | Cluster version (derived from k0s) |
 
 **Use these versions together; mixing other minors may work but is not tested by this chart's CI.**

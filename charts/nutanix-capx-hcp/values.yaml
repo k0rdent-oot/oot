@@ -6,6 +6,10 @@ capx:
   version: v1.7.0 # @schema description: CAPX controller manager/operator version; type: string
   namespace: capx-system # @schema description: Namespace for CAPX controller; type: string
 
+# Provider template configuration
+providerTemplate: # @schema description: ProviderTemplate configuration; type: object
+  enabled: true # @schema description: Enable ProviderTemplate emission; type: boolean
+
 # Nutanix infrastructure configuration
 nutanix: # @schema description: Nutanix Prism Central and cluster configuration; type: object
   prismCentral: # @schema description: Prism Central connection settings; type: object
@@ -51,7 +55,7 @@ worker: # @schema description: Worker node specific machine configuration; type:
 
 # k0s configuration
 k0s: # @schema description: k0s configuration parameters; type: object
-  version: v1.29.2+k0s.0 # @schema description: k0s version; type: string
+  version: v1.33.4+k0s.0 # @schema description: k0s version; type: string
   args: [] # @schema description: Additional k0s args; type: array; items: string
   worker: # @schema description: Worker node k0s configuration; type: object
     labels: {} # @schema description: Labels to apply to worker nodes; type: object; additionalProperties: true

@@ -14,6 +14,15 @@
         }
       }
     },
+    "providerTemplate": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
     "nutanix": {
       "type": "object",
       "properties": {
@@ -185,6 +194,53 @@
             "replicas": {
               "type": "number",
               "minimum": 1
+            },
+            "args": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "calico": {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": ["", "ipip", "vxlan", "bgp"]
+            },
+            "mtu": {
+              "type": ["number", "null"]
+            },
+            "ipPools": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "cidr": {
+                    "type": "string"
+                  },
+                  "encapsulation": {
+                    "type": "string"
+                  },
+                  "natOutgoing": {
+                    "type": "string"
+                  },
+                  "nodeSelector": {
+                    "type": "string"
+                  }
+                },
+                "required": ["cidr"]
+              }
+            },
+            "typha": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                }
+              }
             }
           }
         },
@@ -199,6 +255,21 @@
               "type": "array"
             }
           }
+        }
+      }
+    },
+    "network": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": ["calico", "kube-router", "custom"]
+        },
+        "podCIDR": {
+          "type": "string"
+        },
+        "serviceCIDR": {
+          "type": "string"
         }
       }
     },

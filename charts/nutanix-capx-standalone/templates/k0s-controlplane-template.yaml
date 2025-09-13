@@ -19,6 +19,9 @@ spec:
           {{- range .Values.k0s.args }}
           - {{ . | quote }}
           {{- end }}
+          {{- range .Values.k0s.controlPlane.args }}
+          - {{ . | quote }}
+          {{- end }}
         k0s:
           apiVersion: k0s.k0sproject.io/v1beta1
           kind: ClusterConfig
@@ -32,6 +35,26 @@ spec:
                 anonymous-auth: "true"
                 kubelet-preferred-address-types: "ExternalIP,Hostname,InternalDNS,ExternalDNS"
             network:
-              provider: calico
+              provider: {{ .Values.network.provider | quote }}
+              podCIDR: {{ .Values.network.podCIDR | quote }}
+              serviceCIDR: {{ .Values.network.serviceCIDR | quote }}
+              {{- if eq .Values.network.provider "calico" }}
               calico:
-                mode: vxlan
+                mode: {{ .Values.k0s.calico.mode | quote }}
+                {{- if .Values.k0s.calico.mtu }}
+                mtu: {{ .Values.k0s.calico.mtu }}
+                {{- end }}
+                {{- if .Values.k0s.calico.ipPools }}
+                ipPools:
+                {{- range .Values.k0s.calico.ipPools }}
+                  - cidr: {{ .cidr | quote }}
+                    encapsulation: {{ .encapsulation | quote }}
+                    natOutgoing: {{ .natOutgoing | quote }}
+                    nodeSelector: {{ .nodeSelector | quote }}
+                {{- end }}
+                {{- end }}
+                {{- if .Values.k0s.calico.typha.enabled }}
+                typha:
+                  enabled: {{ .Values.k0s.calico.typha.enabled }}
+                {{- end }}
+              {{- end }}
