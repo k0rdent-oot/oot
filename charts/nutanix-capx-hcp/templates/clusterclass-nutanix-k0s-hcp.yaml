@@ -154,7 +154,7 @@ spec:
         properties:
           version:
             type: string
-            default: "v1.29.2+k0s.0"
+            default: "v1.33.4+k0s.0"
           worker:
             type: object
             properties:
