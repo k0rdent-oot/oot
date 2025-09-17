@@ -1,0 +1,15 @@
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0smotronControlPlaneTemplate
+metadata:
+  name: {{ include "nutanix-capx-hcp.controlPlaneTemplateName" . }}
+  labels:
+    {{- include "nutanix-capx-hcp.labels" . | nindent 4 }}
+spec:
+  template:
+    spec:
+      version: {{ .Values.k0s.version | quote }}
+      {{- if .Values.k0s.args }}
+      k0sConfigSpec:
+        args: {{ .Values.k0s.args | toYaml | nindent 10 }}
+      {{- end }}

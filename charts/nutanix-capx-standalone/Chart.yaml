@@ -1,0 +1,29 @@
+apiVersion: v2
+name: nutanix-capx-standalone
+description: |
+  A KCM template to deploy a k0s cluster on Nutanix with bootstrapped control plane nodes.
+type: application
+version: 0.1.0
+appVersion: "v1.7.0"
+home: https://github.com/k0rdent-oot/oot
+sources:
+  - https://github.com/k0rdent-oot/oot
+  - https://github.com/nutanix-cloud-native/cluster-api-provider-nutanix
+keywords:
+  - k0rdent
+  - oot
+  - capi
+  - nutanix
+  - capx
+  - standalone
+  - k0s
+  - k0smotron
+maintainers:
+  - name: k0rdent-oot maintainers
+    url: https://github.com/k0rdent-oot/oot
+annotations:
+  cluster.x-k8s.io/provider: infrastructure-nutanix, control-plane-k0sproject-k0smotron, bootstrap-k0sproject-k0smotron
+  k0rdent.mirantis.com/type: deployment
+  cluster.x-k8s.io/bootstrap-k0sproject-k0smotron: v1beta1
+  cluster.x-k8s.io/control-plane-k0sproject-k0smotron: v1beta1
+  cluster.x-k8s.io/infrastructure-nutanix: v1beta1

@@ -1,0 +1,27 @@
+---
+# Test values for nutanix-capx-hcp CI
+nutanix:
+  prismCentral:
+    address: "10.1.1.100"
+    port: 9440
+    insecure: false
+  controlPlaneEndpoint:
+    host: "10.1.1.200"
+    port: 6443
+
+machineDefaults:
+  image:
+    type: name
+    name: "ubuntu-22.04-k0s"
+  cluster:
+    type: name
+    name: "PE-Cluster-01"
+  subnets:
+    - type: name
+      name: "VM-Network"
+
+k0s:
+  version: "v1.33.4+k0s.0"
+
+class:
+  name: "nutanix-k0s-hcp"

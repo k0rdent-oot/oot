@@ -1,0 +1,79 @@
+name: Validate Nutanix Charts
+
+on:
+  pull_request:
+    paths:
+      - "charts/nutanix-*/**"
+      - "NUTANIX.md"
+  push:
+    branches:
+      - main
+    paths:
+      - "charts/nutanix-*/**"
+      - "NUTANIX.md"
+
+jobs:
+  validate-capx-charts:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        chart:
+          - name: nutanix-capx-hcp
+            test-values: charts/nutanix-capx-hcp/tests/values.yaml
+          - name: nutanix-capx-standalone
+            test-values: charts/nutanix-capx-standalone/tests/values.yaml
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: "latest"
+
+      - name: Install helm-unittest
+        run: helm plugin install https://github.com/helm-unittest/helm-unittest
+
+      - name: Run helm unittest
+        run: |
+          echo "Running unit tests for ${{ matrix.chart.name }}..."
+          helm unittest --file "tests/tests.yaml" --values "tests/values.yaml" charts/${{ matrix.chart.name }}
+
+      - name: Template chart
+        run: |
+          echo "Templating ${{ matrix.chart.name }}..."
+          if [ -n "${{ matrix.chart.test-values }}" ]; then
+            helm template ${{ matrix.chart.name }} charts/${{ matrix.chart.name }} \
+              -f ${{ matrix.chart.test-values }} \
+              --namespace kcm-system > output.yaml
+          else
+            helm template ${{ matrix.chart.name }} charts/${{ matrix.chart.name }} \
+              --namespace kcm-system > output.yaml
+          fi
+
+      - name: Check HCP chart specific resources
+        if: matrix.chart.name == 'nutanix-capx-hcp'
+        run: |
+          echo "Checking HCP-specific requirements..."
+          grep -q "apiVersion: cluster.x-k8s.io/v1beta2" output.yaml
+          grep -q "kind: K0smotronControlPlaneTemplate" output.yaml
+          grep -q "kind: K0sWorkerConfigTemplate" output.yaml
+          grep -q "kind: NutanixMachineTemplate" output.yaml
+          grep -q "kind: NutanixCluster" output.yaml
+          grep -q "templateRef:" output.yaml
+          # HCP should NOT have control plane machineInfrastructure
+          ! grep -A5 "controlPlane:" output.yaml | grep -q "machineInfrastructure"
+
+      - name: Check Standalone chart specific resources
+        if: matrix.chart.name == 'nutanix-capx-standalone'
+        run: |
+          echo "Checking Standalone-specific requirements..."
+          grep -q "apiVersion: cluster.x-k8s.io/v1beta2" output.yaml
+          grep -q "kind: K0sControlPlaneTemplate" output.yaml
+          grep -q "kind: K0sWorkerConfigTemplate" output.yaml
+          grep -q "kind: NutanixMachineTemplate" output.yaml
+          grep -q "kind: NutanixCluster" output.yaml
+          grep -q "templateRef:" output.yaml
+          # Standalone SHOULD have control plane machineInfrastructure
+          grep -A10 "controlPlane:" output.yaml | grep -q "machineInfrastructure"

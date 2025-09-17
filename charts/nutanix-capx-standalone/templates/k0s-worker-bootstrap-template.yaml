@@ -1,0 +1,23 @@
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: K0sWorkerConfigTemplate
+metadata:
+  name: {{ include "nutanix-capx-standalone.workerBootstrapTemplateName" . }}
+  labels:
+    {{- include "nutanix-capx-standalone.labels" . | nindent 4 }}
+spec:
+  template:
+    spec:
+      version: {{ .Values.k0s.version | quote }}
+      args:
+        - --enable-cloud-provider
+        - --kubelet-extra-args=--cloud-provider=external
+        {{- range .Values.k0s.args }}
+        - {{ . | quote }}
+        {{- end }}
+      {{- if .Values.k0s.worker.labels }}
+      labels: {{ .Values.k0s.worker.labels | toYaml | nindent 8 }}
+      {{- end }}
+      {{- if .Values.k0s.worker.taints }}
+      taints: {{ .Values.k0s.worker.taints | toYaml | nindent 8 }}
+      {{- end }}

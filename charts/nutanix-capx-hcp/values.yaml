@@ -1,0 +1,85 @@
+---
+# @schema title: Nutanix CAPX HCP Configuration
+# @schema description: Configuration for Nutanix CAPX infrastructure provider with hosted control plane (k0smotron)
+
+# CAPX provider configuration
+capx:
+  version: v1.7.0 # @schema description: CAPX controller manager/operator version; type: string
+  namespace: capx-system # @schema description: Namespace for CAPX controller; type: string
+
+# Provider template configuration
+providerTemplate: # @schema description: ProviderTemplate configuration; type: object
+  enabled: true # @schema description: Enable ProviderTemplate emission; type: boolean
+
+# Nutanix infrastructure configuration
+nutanix: # @schema description: Nutanix Prism Central and cluster configuration; type: object
+  prismCentral: # @schema description: Prism Central connection settings; type: object
+    address: "" # @schema description: Prism Central IP address or FQDN; type: string
+    port: 9440 # @schema description: Prism Central port; type: number; minimum: 1; maximum: 65535
+    insecure: false # @schema description: Skip TLS verification; type: boolean
+    # if set, create/expect a per-cluster Secret and wire via credentialRef
+    usePerClusterCredential: false # @schema description: Use per-cluster credentials instead of global; type: boolean
+    credentialSecretName: "" # @schema description: Name of the credential secret (when usePerClusterCredential is true); type: string
+    additionalTrustBundleConfigMapName: "" # @schema description: Name of ConfigMap containing additional CA certificates; type: string
+
+  controlPlaneEndpoint: # @schema description: Control plane endpoint configuration; type: object
+    host: "" # @schema description: VIP or static IP for control plane endpoint (must be outside DHCP/IPAM range); type: string
+    port: 6443 # @schema description: Control plane endpoint port; type: number; minimum: 1; maximum: 65535
+
+# Default machine settings for workers (no control plane machines in HCP mode)
+machineDefaults: # @schema description: Default machine configuration for Nutanix VMs; type: object
+  image: # @schema description: VM image configuration; type: object
+    type: name # @schema description: Image reference type (name or uuid); type: string; enum: [name, uuid]
+    name: "" # @schema description: Image name (when type is name); type: string
+    uuid: "" # @schema description: Image UUID (when type is uuid); type: string
+  cluster: # @schema description: Prism Element cluster configuration; type: object
+    type: name # @schema description: Cluster reference type (name or uuid); type: string; enum: [name, uuid]
+    name: "" # @schema description: Cluster name (when type is name); type: string
+    uuid: "" # @schema description: Cluster UUID (when type is uuid); type: string
+  subnets: # @schema description: Network subnet configuration; type: array
+    - type: name # @schema description: Subnet reference type (name or uuid); type: string; enum: [name, uuid]
+      name: "" # @schema description: Subnet name (when type is name); type: string
+      uuid: "" # @schema description: Subnet UUID (when type is uuid); type: string
+  bootType: legacy # @schema description: Boot type for VMs; type: string; enum: [legacy, uefi]
+  vcpusPerSocket: 1 # @schema description: vCPUs per socket; type: number; minimum: 1
+  vcpuSockets: 2 # @schema description: Number of vCPU sockets; type: number; minimum: 1
+  memorySize: 4Gi # @schema description: Memory size (e.g., 4Gi, 8Gi); type: string
+  systemDiskSize: 40Gi # @schema description: System disk size (e.g., 40Gi, 100Gi); type: string
+  project: "" # @schema description: Nutanix project name (optional); type: string
+  additionalCategories: [] # @schema description: Additional Nutanix categories to apply; type: array; items: string
+
+# Worker nodes specific overrides
+worker: # @schema description: Worker node specific machine configuration; type: object
+  vcpuSockets: 2 # @schema description: Number of vCPU sockets for workers; type: number; minimum: 1
+  memorySize: 4Gi # @schema description: Memory size for workers; type: string
+  systemDiskSize: 40Gi # @schema description: System disk size for workers; type: string
+
+# k0s configuration
+k0s: # @schema description: k0s configuration parameters; type: object
+  version: v1.33.4+k0s.0 # @schema description: k0s version; type: string
+  args: [] # @schema description: Additional k0s args; type: array; items: string
+  worker: # @schema description: Worker node k0s configuration; type: object
+    labels: {} # @schema description: Labels to apply to worker nodes; type: object; additionalProperties: true
+    taints: [] # @schema description: Taints to apply to worker nodes; type: array
+
+# Cluster network configuration
+clusterNetwork: # @schema description: Cluster network configuration; type: object
+  pods: # @schema description: Pod network configuration; type: object
+    cidrBlocks: # @schema description: Pod CIDR blocks; type: array; items: string
+      - "10.243.0.0/16"
+  services: # @schema description: Service network configuration; type: object
+    cidrBlocks: # @schema description: Service CIDR blocks; type: array; items: string
+      - "10.95.0.0/16"
+
+# ClusterClass naming
+class: # @schema description: ClusterClass configuration; type: object
+  name: "nutanix-k0s-hcp" # @schema description: HCP ClusterClass name; type: string
+
+# Cluster labels and annotations
+clusterLabels: {} # @schema description: Labels to apply to the cluster; type: object; additionalProperties: true
+clusterAnnotations: {} # @schema description: Annotations to apply to the cluster; type: object; additionalProperties: true
+
+# Machine health check configuration
+machineHealthCheck: # @schema description: Machine health check configuration; type: object
+  enabled: false # @schema description: Enable machine health checks; type: boolean
+  maxUnhealthy: 40% # @schema description: Maximum unhealthy machines threshold; type: string

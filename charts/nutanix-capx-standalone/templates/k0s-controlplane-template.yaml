@@ -1,0 +1,64 @@
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0sControlPlaneTemplate
+metadata:
+  name: {{ include "nutanix-capx-standalone.controlPlaneTemplateName" . }}
+  labels:
+    {{- include "nutanix-capx-standalone.labels" . | nindent 4 }}
+spec:
+  template:
+    spec:
+      version: {{ .Values.k0s.version | quote }}
+      k0sConfigSpec:
+        args:
+          - --enable-worker
+          - --enable-cloud-provider
+          - --kubelet-extra-args=--cloud-provider=external
+          # ToDo: make this field configurable from Helm values
+          - --disable-components=konnectivity-server
+          - --no-taints
+          {{- range .Values.k0s.args }}
+          - {{ . | quote }}
+          {{- end }}
+          {{- range .Values.k0s.controlPlane.args }}
+          - {{ . | quote }}
+          {{- end }}
+        k0s:
+          apiVersion: k0s.k0sproject.io/v1beta1
+          kind: ClusterConfig
+          metadata:
+            # ToDo: make this field configurable from Helm values
+            name: k0s
+          spec:
+            telemetry:
+              # ToDo: make this field configurable from Helm values
+              enabled: false
+            api:
+              extraArgs:
+                anonymous-auth: "true"
+                # ToDo: make this field configurable from Helm values
+                kubelet-preferred-address-types: "ExternalIP,Hostname,InternalDNS,ExternalDNS"
+            network:
+              provider: {{ .Values.network.provider | quote }}
+              podCIDR: {{ .Values.network.podCIDR | quote }}
+              serviceCIDR: {{ .Values.network.serviceCIDR | quote }}
+              {{- if eq .Values.network.provider "calico" }}
+              calico:
+                mode: {{ .Values.k0s.calico.mode | quote }}
+                {{- if .Values.k0s.calico.mtu }}
+                mtu: {{ .Values.k0s.calico.mtu }}
+                {{- end }}
+                {{- if .Values.k0s.calico.ipPools }}
+                ipPools:
+                {{- range .Values.k0s.calico.ipPools }}
+                  - cidr: {{ .cidr | quote }}
+                    encapsulation: {{ .encapsulation | quote }}
+                    natOutgoing: {{ .natOutgoing | quote }}
+                    nodeSelector: {{ .nodeSelector | quote }}
+                {{- end }}
+                {{- end }}
+                {{- if .Values.k0s.calico.typha.enabled }}
+                typha:
+                  enabled: {{ .Values.k0s.calico.typha.enabled }}
+                {{- end }}
+              {{- end }}

@@ -1,0 +1,575 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "capx": {
+            "type": "object",
+            "properties": {
+                "namespace": {
+                    "description": "Namespace for CAPX controller",
+                    "type": [
+                        "string"
+                    ]
+                },
+                "version": {
+                    "description": "CAPX controller manager/operator version",
+                    "type": [
+                        "string"
+                    ]
+                }
+            }
+        },
+        "class": {
+            "description": "ClusterClass configuration",
+            "type": [
+                "object"
+            ],
+            "properties": {
+                "name": {
+                    "description": "Standalone ClusterClass name",
+                    "type": [
+                        "string"
+                    ]
+                }
+            }
+        },
+        "clusterAnnotations": {
+            "description": "Annotations to apply to the cluster",
+            "type": [
+                "object"
+            ],
+            "additionalProperties": true
+        },
+        "clusterLabels": {
+            "description": "Labels to apply to the cluster",
+            "type": [
+                "object"
+            ],
+            "additionalProperties": true
+        },
+        "clusterNetwork": {
+            "description": "Cluster network configuration",
+            "type": [
+                "object"
+            ],
+            "properties": {
+                "pods": {
+                    "description": "Pod network configuration",
+                    "type": [
+                        "object"
+                    ],
+                    "properties": {
+                        "cidrBlocks": {
+                            "description": "Pod CIDR blocks",
+                            "type": [
+                                "array"
+                            ],
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "services": {
+                    "description": "Service network configuration",
+                    "type": [
+                        "object"
+                    ],
+                    "properties": {
+                        "cidrBlocks": {
+                            "description": "Service CIDR blocks",
+                            "type": [
+                                "array"
+                            ],
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "controlPlane": {
+            "description": "Control plane specific machine configuration",
+            "type": [
+                "object"
+            ],
+            "properties": {
+                "memorySize": {
+                    "description": "Memory size for control plane",
+                    "type": [
+                        "string"
+                    ]
+                },
+                "systemDiskSize": {
+                    "description": "System disk size for control plane",
+                    "type": [
+                        "string"
+                    ]
+                },
+                "vcpuSockets": {
+                    "description": "Number of vCPU sockets for control plane",
+                    "type": [
+                        "number"
+                    ],
+                    "minimum": 1
+                }
+            }
+        },
+        "k0s": {
+            "description": "k0s configuration parameters",
+            "type": [
+                "object"
+            ],
+            "properties": {
+                "args": {
+                    "description": "Additional k0s args",
+                    "type": [
+                        "array"
+                    ]
+                },
+                "calico": {
+                    "description": "Calico network configuration",
+                    "type": [
+                        "object"
+                    ],
+                    "properties": {
+                        "ipPools": {
+                            "description": "Calico IP pools",
+                            "type": [
+                                "array"
+                            ],
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "cidr": {
+                                        "description": "IP pool CIDR",
+                                        "type": [
+                                            "string"
+                                        ]
+                                    },
+                                    "encapsulation": {
+                                        "description": "Encapsulation type",
+                                        "type": [
+                                            "string"
+                                        ]
+                                    },
+                                    "natOutgoing": {
+                                        "description": "NAT outgoing",
+                                        "type": [
+                                            "string"
+                                        ]
+                                    },
+                                    "nodeSelector": {
+                                        "description": "Node selector",
+                                        "type": [
+                                            "string"
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        "mode": {
+                            "description": "Calico mode",
+                            "type": [
+                                "string"
+                            ],
+                            "enum": [
+                                "",
+                                "ipip",
+                                "vxlan",
+                                "bgp"
+                            ]
+                        },
+                        "mtu": {
+                            "description": "Calico MTU",
+                            "type": [
+                                "number",
+                                "null"
+                            ]
+                        },
+                        "typha": {
+                            "description": "Typha configuration",
+                            "type": [
+                                "object"
+                            ],
+                            "properties": {
+                                "enabled": {
+                                    "description": "Enable Typha",
+                                    "type": [
+                                        "boolean"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "controlPlane": {
+                    "description": "Control plane k0s configuration",
+                    "type": [
+                        "object"
+                    ],
+                    "properties": {
+                        "args": {
+                            "description": "Additional control plane k0s args",
+                            "type": [
+                                "array"
+                            ]
+                        },
+                        "replicas": {
+                            "description": "Number of control plane replicas",
+                            "type": [
+                                "number"
+                            ],
+                            "minimum": 1
+                        }
+                    }
+                },
+                "version": {
+                    "description": "k0s version",
+                    "type": [
+                        "string"
+                    ]
+                },
+                "worker": {
+                    "description": "Worker node k0s configuration",
+                    "type": [
+                        "object"
+                    ],
+                    "properties": {
+                        "labels": {
+                            "description": "Labels to apply to worker nodes",
+                            "type": [
+                                "object"
+                            ],
+                            "additionalProperties": true
+                        },
+                        "taints": {
+                            "description": "Taints to apply to worker nodes",
+                            "type": [
+                                "array"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "machineDefaults": {
+            "description": "Default machine configuration for Nutanix VMs",
+            "type": [
+                "object"
+            ],
+            "properties": {
+                "additionalCategories": {
+                    "description": "Additional Nutanix categories to apply",
+                    "type": [
+                        "array"
+                    ]
+                },
+                "bootType": {
+                    "description": "Boot type for VMs",
+                    "type": [
+                        "string"
+                    ],
+                    "enum": [
+                        "legacy",
+                        "uefi"
+                    ]
+                },
+                "cluster": {
+                    "description": "Prism Element cluster configuration",
+                    "type": [
+                        "object"
+                    ],
+                    "properties": {
+                        "name": {
+                            "description": "Cluster name (when type is name)",
+                            "type": [
+                                "string"
+                            ]
+                        },
+                        "type": {
+                            "description": "Cluster reference type (name or uuid)",
+                            "type": [
+                                "string"
+                            ],
+                            "enum": [
+                                "name",
+                                "uuid"
+                            ]
+                        },
+                        "uuid": {
+                            "description": "Cluster UUID (when type is uuid)",
+                            "type": [
+                                "string"
+                            ]
+                        }
+                    }
+                },
+                "image": {
+                    "description": "VM image configuration",
+                    "type": [
+                        "object"
+                    ],
+                    "properties": {
+                        "name": {
+                            "description": "Image name (when type is name)",
+                            "type": [
+                                "string"
+                            ]
+                        },
+                        "type": {
+                            "description": "Image reference type (name or uuid)",
+                            "type": [
+                                "string"
+                            ],
+                            "enum": [
+                                "name",
+                                "uuid"
+                            ]
+                        },
+                        "uuid": {
+                            "description": "Image UUID (when type is uuid)",
+                            "type": [
+                                "string"
+                            ]
+                        }
+                    }
+                },
+                "memorySize": {
+                    "description": "Memory size (e.g., 4Gi, 8Gi)",
+                    "type": [
+                        "string"
+                    ]
+                },
+                "project": {
+                    "description": "Nutanix project name (optional)",
+                    "type": [
+                        "string"
+                    ]
+                },
+                "subnets": {
+                    "description": "Network subnet configuration",
+                    "type": [
+                        "array"
+                    ],
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "description": "Subnet name (when type is name)",
+                                "type": [
+                                    "string"
+                                ]
+                            },
+                            "type": {
+                                "description": "Subnet reference type (name or uuid)",
+                                "type": [
+                                    "string"
+                                ],
+                                "enum": [
+                                    "name",
+                                    "uuid"
+                                ]
+                            },
+                            "uuid": {
+                                "description": "Subnet UUID (when type is uuid)",
+                                "type": [
+                                    "string"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "systemDiskSize": {
+                    "description": "System disk size (e.g., 40Gi, 100Gi)",
+                    "type": [
+                        "string"
+                    ]
+                },
+                "vcpuSockets": {
+                    "description": "Number of vCPU sockets",
+                    "type": [
+                        "number"
+                    ],
+                    "minimum": 1
+                },
+                "vcpusPerSocket": {
+                    "description": "vCPUs per socket",
+                    "type": [
+                        "number"
+                    ],
+                    "minimum": 1
+                }
+            }
+        },
+        "machineHealthCheck": {
+            "description": "Machine health check configuration",
+            "type": [
+                "object"
+            ],
+            "properties": {
+                "enabled": {
+                    "description": "Enable machine health checks",
+                    "type": [
+                        "boolean"
+                    ]
+                },
+                "maxUnhealthy": {
+                    "description": "Maximum unhealthy machines threshold",
+                    "type": [
+                        "string"
+                    ]
+                }
+            }
+        },
+        "network": {
+            "description": "Cluster network configuration",
+            "type": [
+                "object"
+            ],
+            "properties": {
+                "podCIDR": {
+                    "description": "Pod CIDR",
+                    "type": [
+                        "string"
+                    ]
+                },
+                "provider": {
+                    "description": "Network provider",
+                    "type": [
+                        "string"
+                    ],
+                    "enum": [
+                        "calico",
+                        "kube-router",
+                        "custom"
+                    ]
+                },
+                "serviceCIDR": {
+                    "description": "Service CIDR",
+                    "type": [
+                        "string"
+                    ]
+                }
+            }
+        },
+        "nutanix": {
+            "description": "Nutanix Prism Central and cluster configuration",
+            "type": [
+                "object"
+            ],
+            "properties": {
+                "controlPlaneEndpoint": {
+                    "description": "Control plane endpoint configuration",
+                    "type": [
+                        "object"
+                    ],
+                    "properties": {
+                        "host": {
+                            "description": "VIP or static IP for control plane endpoint (must be outside DHCP/IPAM range)",
+                            "type": [
+                                "string"
+                            ]
+                        },
+                        "port": {
+                            "description": "Control plane endpoint port",
+                            "type": [
+                                "number"
+                            ],
+                            "maximum": 65535,
+                            "minimum": 1
+                        }
+                    }
+                },
+                "prismCentral": {
+                    "description": "Prism Central connection settings",
+                    "type": [
+                        "object"
+                    ],
+                    "properties": {
+                        "additionalTrustBundleConfigMapName": {
+                            "description": "Name of ConfigMap containing additional CA certificates",
+                            "type": [
+                                "string"
+                            ]
+                        },
+                        "address": {
+                            "description": "Prism Central IP address or FQDN",
+                            "type": [
+                                "string"
+                            ]
+                        },
+                        "credentialSecretName": {
+                            "description": "Name of the credential secret (when usePerClusterCredential is true)",
+                            "type": [
+                                "string"
+                            ]
+                        },
+                        "insecure": {
+                            "description": "Skip TLS verification",
+                            "type": [
+                                "boolean"
+                            ]
+                        },
+                        "port": {
+                            "description": "Prism Central port",
+                            "type": [
+                                "number"
+                            ],
+                            "maximum": 65535,
+                            "minimum": 1
+                        },
+                        "usePerClusterCredential": {
+                            "description": "Use per-cluster credentials instead of global",
+                            "type": [
+                                "boolean"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "providerTemplate": {
+            "description": "ProviderTemplate configuration",
+            "type": [
+                "object"
+            ],
+            "properties": {
+                "enabled": {
+                    "description": "Enable ProviderTemplate emission",
+                    "type": [
+                        "boolean"
+                    ]
+                }
+            }
+        },
+        "worker": {
+            "description": "Worker node specific machine configuration",
+            "type": [
+                "object"
+            ],
+            "properties": {
+                "memorySize": {
+                    "description": "Memory size for workers",
+                    "type": [
+                        "string"
+                    ]
+                },
+                "systemDiskSize": {
+                    "description": "System disk size for workers",
+                    "type": [
+                        "string"
+                    ]
+                },
+                "vcpuSockets": {
+                    "description": "Number of vCPU sockets for workers",
+                    "type": [
+                        "number"
+                    ],
+                    "minimum": 1
+                }
+            }
+        }
+    }
+}
