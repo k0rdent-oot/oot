@@ -14,6 +14,7 @@ spec:
           - --enable-worker
           - --enable-cloud-provider
           - --kubelet-extra-args=--cloud-provider=external
+          # ToDo: make this field configurable from Helm values
           - --disable-components=konnectivity-server
           - --no-taints
           {{- range .Values.k0s.args }}
@@ -26,13 +27,16 @@ spec:
           apiVersion: k0s.k0sproject.io/v1beta1
           kind: ClusterConfig
           metadata:
+            # ToDo: make this field configurable from Helm values
             name: k0s
           spec:
             telemetry:
+              # ToDo: make this field configurable from Helm values
               enabled: false
             api:
               extraArgs:
                 anonymous-auth: "true"
+                # ToDo: make this field configurable from Helm values
                 kubelet-preferred-address-types: "ExternalIP,Hostname,InternalDNS,ExternalDNS"
             network:
               provider: {{ .Values.network.provider | quote }}

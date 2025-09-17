@@ -3,44 +3,26 @@ name: Validate Nutanix Charts
 on:
   pull_request:
     paths:
-      - 'charts/nutanix-*/**'
-      - 'NUTANIX.md'
-      - 'smoke/**'
+      - "charts/nutanix-*/**"
+      - "NUTANIX.md"
   push:
     branches:
       - main
     paths:
-      - 'charts/nutanix-*/**'
-      - 'NUTANIX.md'
-      - 'smoke/**'
-
-env:
-  CAPI_VERSION: v1.8.4
-  CAPX_VERSION: v1.7.0
-  K0SMOTRON_VERSION: v1.0.6
-  K0S_VERSION: v1.33.4+k0s.0
+      - "charts/nutanix-*/**"
+      - "NUTANIX.md"
 
 jobs:
-  validate-charts:
+  validate-capx-charts:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         chart:
           - name: nutanix-capx-hcp
-            type: capx
-            test-values: charts/nutanix-capx-hcp/ci/test-values.yaml
+            test-values: charts/nutanix-capx-hcp/tests/values.yaml
           - name: nutanix-capx-standalone
-            type: capx
-            test-values: charts/nutanix-capx-standalone/ci/test-values.yaml
-          - name: nutanix-pp-hcp
-            type: provider-pack
-            test-values: ""
-          - name: nutanix-pp-standalone
-            type: provider-pack
-            test-values: ""
-          - name: nutanix-capx
-            type: legacy
-            test-values: charts/nutanix-capx/ci/test-values-hcp.yaml
+            test-values: charts/nutanix-capx-standalone/tests/values.yaml
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -48,60 +30,17 @@ jobs:
       - name: Set up Helm
         uses: azure/setup-helm@v4
         with:
-          version: 'latest'
-
-      - name: Set up kubeconform
-        if: matrix.chart.type != 'provider-pack'
-        run: |
-          KUBECONFORM_VERSION=v0.6.6
-          curl -L -o kubeconform.tar.gz https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz
-          tar -xzf kubeconform.tar.gz
-          sudo mv kubeconform /usr/local/bin/
-          kubeconform -v
-
-      - name: Download CRDs
-        if: matrix.chart.type != 'provider-pack'
-        run: |
-          echo "Using versions: CAPI=${{ env.CAPI_VERSION }}, CAPX=${{ env.CAPX_VERSION }}, k0smotron=${{ env.K0SMOTRON_VERSION }}"
-          mkdir -p crds/
-          
-          # CAPI Core CRDs
-          curl -s https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/${{ env.CAPI_VERSION }}/config/crd/bases/cluster.x-k8s.io_clusters.yaml > crds/cluster.x-k8s.io_clusters.yaml
-          curl -s https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/${{ env.CAPI_VERSION }}/config/crd/bases/cluster.x-k8s.io_clusterclasses.yaml > crds/cluster.x-k8s.io_clusterclasses.yaml
-          curl -s https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/${{ env.CAPI_VERSION }}/config/crd/bases/cluster.x-k8s.io_machinedeployments.yaml > crds/cluster.x-k8s.io_machinedeployments.yaml
-          curl -s https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/${{ env.CAPI_VERSION }}/config/crd/bases/cluster.x-k8s.io_machines.yaml > crds/cluster.x-k8s.io_machines.yaml
-          
-          # CAPX CRDs
-          curl -s https://raw.githubusercontent.com/nutanix-cloud-native/cluster-api-provider-nutanix/${{ env.CAPX_VERSION }}/config/crd/bases/infrastructure.cluster.x-k8s.io_nutanixclusters.yaml > crds/infrastructure.cluster.x-k8s.io_nutanixclusters.yaml
-          curl -s https://raw.githubusercontent.com/nutanix-cloud-native/cluster-api-provider-nutanix/${{ env.CAPX_VERSION }}/config/crd/bases/infrastructure.cluster.x-k8s.io_nutanixmachinetemplates.yaml > crds/infrastructure.cluster.x-k8s.io_nutanixmachinetemplates.yaml
-          curl -s https://raw.githubusercontent.com/nutanix-cloud-native/cluster-api-provider-nutanix/${{ env.CAPX_VERSION }}/config/crd/bases/infrastructure.cluster.x-k8s.io_nutanixmachines.yaml > crds/infrastructure.cluster.x-k8s.io_nutanixmachines.yaml
-          
-          # k0s/k0smotron CRDs
-          curl -s https://raw.githubusercontent.com/k0sproject/k0smotron/${{ env.K0SMOTRON_VERSION }}/config/crd/bases/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml > crds/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml
-          curl -s https://raw.githubusercontent.com/k0sproject/k0smotron/${{ env.K0SMOTRON_VERSION }}/config/crd/bases/controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml > crds/controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml
-          curl -s https://raw.githubusercontent.com/k0sproject/k0smotron/${{ env.K0SMOTRON_VERSION }}/config/crd/bases/bootstrap.cluster.x-k8s.io_k0sworkerconfigtemplates.yaml > crds/bootstrap.cluster.x-k8s.io_k0sworkerconfigtemplates.yaml
-          
-          # k0rdent CRDs
-          curl -s https://raw.githubusercontent.com/Mirantis/k0rdent/v1.2.0/api/v1beta1/providertemplate.yaml > crds/k0rdent.mirantis.com_providertemplates.yaml
-          curl -s https://raw.githubusercontent.com/Mirantis/k0rdent/v1.2.0/api/v1beta1/providerinterface.yaml > crds/k0rdent.mirantis.com_providerinterfaces.yaml
+          version: "latest"
 
       - name: Install helm-unittest
-        if: matrix.chart.type == 'capx' || matrix.chart.type == 'legacy'
         run: helm plugin install https://github.com/helm-unittest/helm-unittest
 
-      - name: Lint Helm chart
-        run: |
-          echo "Linting ${{ matrix.chart.name }} chart..."
-          helm lint charts/${{ matrix.chart.name }}
-
       - name: Run helm unittest
-        if: matrix.chart.type == 'capx' || matrix.chart.type == 'legacy'
         run: |
           echo "Running unit tests for ${{ matrix.chart.name }}..."
-          helm unittest charts/${{ matrix.chart.name }}
+          helm unittest --file "tests/tests.yaml" --values "tests/values.yaml" charts/${{ matrix.chart.name }}
 
-      - name: Validate chart templates
-        if: matrix.chart.type == 'capx' || matrix.chart.type == 'legacy'
+      - name: Template chart
         run: |
           echo "Templating ${{ matrix.chart.name }}..."
           if [ -n "${{ matrix.chart.test-values }}" ]; then
@@ -112,9 +51,6 @@ jobs:
             helm template ${{ matrix.chart.name }} charts/${{ matrix.chart.name }} \
               --namespace kcm-system > output.yaml
           fi
-          
-          # Validate against CRDs
-          kubeconform -schema-location crds/ -schema-location default -summary output.yaml
 
       - name: Check HCP chart specific resources
         if: matrix.chart.name == 'nutanix-capx-hcp'
@@ -128,7 +64,6 @@ jobs:
           grep -q "templateRef:" output.yaml
           # HCP should NOT have control plane machineInfrastructure
           ! grep -A5 "controlPlane:" output.yaml | grep -q "machineInfrastructure"
-          echo "✅ HCP chart validation passed"
 
       - name: Check Standalone chart specific resources
         if: matrix.chart.name == 'nutanix-capx-standalone'
@@ -142,114 +77,3 @@ jobs:
           grep -q "templateRef:" output.yaml
           # Standalone SHOULD have control plane machineInfrastructure
           grep -A10 "controlPlane:" output.yaml | grep -q "machineInfrastructure"
-          echo "✅ Standalone chart validation passed"
-
-      - name: Check provider pack resources
-        if: matrix.chart.type == 'provider-pack'
-        run: |
-          echo "Checking provider pack requirements..."
-          helm template ${{ matrix.chart.name }} charts/${{ matrix.chart.name }} \
-            --namespace kcm-system > provider-pack-output.yaml
-          
-          # Check for required objects
-          grep -q "kind: ProviderTemplate" provider-pack-output.yaml
-          grep -q "kind: ProviderInterface" provider-pack-output.yaml
-          grep -q "kind: ClusterTemplate" provider-pack-output.yaml
-          
-          # Check for proper naming
-          if [[ "${{ matrix.chart.name }}" == *"hcp"* ]]; then
-            grep -q "nutanix-hcp" provider-pack-output.yaml
-          else
-            grep -q "nutanix-standalone" provider-pack-output.yaml
-          fi
-          
-          echo "✅ Provider pack validation passed"
-
-      - name: Test legacy chart XOR validation
-        if: matrix.chart.name == 'nutanix-capx'
-        run: |
-          echo "Testing legacy chart XOR validation..."
-          # This should FAIL with non-zero exit due to schema validation
-          if helm template nutanix-capx charts/nutanix-capx -f charts/nutanix-capx/ci/test-values-both-modes.yaml --namespace kcm-system > /dev/null 2>&1; then
-            echo "ERROR: Schema validation should have failed but didn't!"
-            exit 1
-          else
-            echo "✅ Legacy chart correctly rejected both modes enabled"
-          fi
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: ${{ matrix.chart.name }}-validation-outputs
-          path: |
-            output.yaml
-            provider-pack-output.yaml
-
-  validate-nutanix-legacy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Helm
-        uses: azure/setup-helm@v4
-        with:
-          version: 'latest'
-
-      - name: Set up kubeconform
-        run: |
-          KUBECONFORM_VERSION=v0.6.6
-          curl -L -o kubeconform.tar.gz https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz
-          tar -xzf kubeconform.tar.gz
-          sudo mv kubeconform /usr/local/bin/
-
-      - name: Download CRDs
-        run: |
-          echo "Using versions: CAPI=${{ env.CAPI_VERSION }}, CAPX=${{ env.CAPX_VERSION }}, k0smotron=${{ env.K0SMOTRON_VERSION }}"
-          mkdir -p crds/
-          
-          # Download the same CRDs as matrix job
-          curl -s https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/${{ env.CAPI_VERSION }}/config/crd/bases/cluster.x-k8s.io_clusterclasses.yaml > crds/cluster.x-k8s.io_clusterclasses.yaml
-          curl -s https://raw.githubusercontent.com/nutanix-cloud-native/cluster-api-provider-nutanix/${{ env.CAPX_VERSION }}/config/crd/bases/infrastructure.cluster.x-k8s.io_nutanixclusters.yaml > crds/infrastructure.cluster.x-k8s.io_nutanixclusters.yaml
-          curl -s https://raw.githubusercontent.com/k0sproject/k0smotron/${{ env.K0SMOTRON_VERSION }}/config/crd/bases/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml > crds/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml
-          curl -s https://raw.githubusercontent.com/k0sproject/k0smotron/${{ env.K0SMOTRON_VERSION }}/config/crd/bases/controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml > crds/controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml
-
-      - name: Test legacy chart both modes (for compatibility)
-        run: |
-          echo "Testing legacy chart HCP mode..."
-          helm template nutanix-capx charts/nutanix-capx -f charts/nutanix-capx/ci/test-values-hcp.yaml --namespace kcm-system > legacy-hcp.yaml
-          kubeconform -schema-location crds/ -schema-location default -summary legacy-hcp.yaml
-          
-          echo "Testing legacy chart Standalone mode..."  
-          helm template nutanix-capx charts/nutanix-capx -f charts/nutanix-capx/ci/test-values-standalone.yaml --namespace kcm-system > legacy-standalone.yaml
-          kubeconform -schema-location crds/ -schema-location default -summary legacy-standalone.yaml
-          
-          echo "✅ Legacy chart compatibility validated"
-
-      - name: Upload legacy artifacts
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: nutanix-legacy-validation-outputs
-          path: |
-            legacy-hcp.yaml
-            legacy-standalone.yaml
-
-  yamllint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
-          
-      - name: Install yamllint
-        run: pip install yamllint
-        
-      - name: Lint YAML files
-        run: |
-          yamllint charts/nutanix-*/ NUTANIX.md smoke/

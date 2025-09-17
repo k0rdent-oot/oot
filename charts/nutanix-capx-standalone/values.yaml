@@ -1,3 +1,4 @@
+---
 # @schema title: Nutanix CAPX Standalone Configuration
 # @schema description: Configuration for Nutanix CAPX infrastructure provider with standalone control plane
 
@@ -44,7 +45,7 @@ machineDefaults: # @schema description: Default machine configuration for Nutani
   vcpuSockets: 2 # @schema description: Number of vCPU sockets; type: number; minimum: 1
   memorySize: 4Gi # @schema description: Memory size (e.g., 4Gi, 8Gi); type: string
   systemDiskSize: 40Gi # @schema description: System disk size (e.g., 40Gi, 100Gi); type: string
-  project: null # @schema description: Nutanix project name (optional); type: string
+  project: "" # @schema description: Nutanix project name (optional); type: string
   additionalCategories: [] # @schema description: Additional Nutanix categories to apply; type: array; items: string
 
 # Control plane specific overrides
@@ -107,6 +108,3 @@ clusterAnnotations: {} # @schema description: Annotations to apply to the cluste
 machineHealthCheck: # @schema description: Machine health check configuration; type: object
   enabled: false # @schema description: Enable machine health checks; type: boolean
   maxUnhealthy: 40% # @schema description: Maximum unhealthy machines threshold; type: string
-
-# Generic objects creation
-objects: [] # @schema description: List of generic Kubernetes objects to create; type: array

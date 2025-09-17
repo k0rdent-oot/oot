@@ -1,16 +1,17 @@
-suite: Nutanix CAPX HCP Chart Tests
+---
+suite: Nutanix CAPX Standalone Chart Tests
 templates:
-  - templates/clusterclass-nutanix-k0s-hcp.yaml
-  - templates/k0smotron-controlplane-template.yaml
+  - templates/clusterclass-nutanix-k0s-standalone.yaml
+  - templates/k0s-controlplane-template.yaml
+  - templates/nutanix-machine-template-cp.yaml
   - templates/k0s-worker-bootstrap-template.yaml
   - templates/nutanix-machine-template-worker.yaml
   - templates/nutanix-cluster.yaml
-  - templates/providerinterface-capx-hcp.yaml
-  - templates/providertemplate-capx-hcp.yaml
-  - templates/namespace-capx-system.yaml
+  - templates/providerinterface-capx-standalone.yaml
+  - templates/providertemplate-capx-standalone.yaml
 tests:
   - it: should render ClusterClass with correct apiVersion and templateRef
-    template: templates/clusterclass-nutanix-k0s-hcp.yaml
+    template: templates/clusterclass-nutanix-k0s-standalone.yaml
     asserts:
       - equal:
           path: apiVersion
@@ -20,19 +21,32 @@ tests:
           value: ClusterClass
       - equal:
           path: spec.controlPlane.templateRef.kind
-          value: K0smotronControlPlaneTemplate
-      - notExists:
+          value: K0sControlPlaneTemplate
+      - exists:
           path: spec.controlPlane.machineInfrastructure
+      - equal:
+          path: spec.controlPlane.machineInfrastructure.templateRef.kind
+          value: NutanixMachineTemplate
 
-  - it: should render K0smotronControlPlaneTemplate
-    template: templates/k0smotron-controlplane-template.yaml
+  - it: should render K0sControlPlaneTemplate
+    template: templates/k0s-controlplane-template.yaml
     asserts:
       - equal:
           path: apiVersion
           value: controlplane.cluster.x-k8s.io/v1beta1
       - equal:
           path: kind
-          value: K0smotronControlPlaneTemplate
+          value: K0sControlPlaneTemplate
+
+  - it: should render control plane NutanixMachineTemplate
+    template: templates/nutanix-machine-template-cp.yaml
+    asserts:
+      - equal:
+          path: apiVersion
+          value: infrastructure.cluster.x-k8s.io/v1beta1
+      - equal:
+          path: kind
+          value: NutanixMachineTemplate
 
   - it: should render K0sWorkerConfigTemplate
     template: templates/k0s-worker-bootstrap-template.yaml
@@ -44,7 +58,7 @@ tests:
           path: kind
           value: K0sWorkerConfigTemplate
 
-  - it: should render worker NutanixMachineTemplate only
+  - it: should render worker NutanixMachineTemplate
     template: templates/nutanix-machine-template-worker.yaml
     asserts:
       - equal:
@@ -65,7 +79,7 @@ tests:
           value: NutanixCluster
 
   - it: should render ProviderInterface
-    template: templates/providerinterface-capx-hcp.yaml
+    template: templates/providerinterface-capx-standalone.yaml
     asserts:
       - equal:
           path: apiVersion
@@ -75,10 +89,10 @@ tests:
           value: ProviderInterface
       - contains:
           path: spec.exposedProviders
-          content: nutanix-hcp
+          content: nutanix-standalone
 
   - it: should render ProviderTemplate
-    template: templates/providertemplate-capx-hcp.yaml
+    template: templates/providertemplate-capx-standalone.yaml
     asserts:
       - equal:
           path: apiVersion
@@ -86,13 +100,3 @@ tests:
       - equal:
           path: kind
           value: ProviderTemplate
-
-  - it: should render Namespace
-    template: templates/namespace-capx-system.yaml
-    asserts:
-      - equal:
-          path: apiVersion
-          value: v1
-      - equal:
-          path: kind
-          value: Namespace

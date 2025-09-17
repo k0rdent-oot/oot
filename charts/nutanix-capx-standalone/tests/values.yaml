@@ -1,11 +1,12 @@
-# Test values for HCP mode validation
+---
+# Test values for nutanix-capx-standalone CI
 nutanix:
   prismCentral:
     address: "10.1.1.100"
     port: 9440
     insecure: false
   controlPlaneEndpoint:
-    host: "10.1.1.200"
+    host: "10.1.1.201"
     port: 6443
 
 machineDefaults:
@@ -19,16 +20,15 @@ machineDefaults:
     - type: name
       name: "VM-Network"
 
-k0s:
-  version: "v1.29.2+k0s.0"
+controlPlane:
+  vcpuSockets: 4
+  memorySize: "8Gi"
+  systemDiskSize: "80Gi"
 
-modes:
-  hcp:
-    enabled: true
-  standalone:
-    enabled: false
+k0s:
+  version: "v1.33.4+k0s.0"
+  controlPlane:
+    replicas: 3
 
 class:
-  name:
-    hcp: "nutanix-k0s-hcp"
-    standalone: "nutanix-k0s-standalone"
+  name: "nutanix-k0s-standalone"

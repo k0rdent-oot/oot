@@ -5,7 +5,7 @@ This Helm chart deploys a Nutanix CAPX infrastructure provider for Kubernetes cl
 ## Chart Scope
 
 - **Control Plane**: Deployed as Nutanix VMs running k0s
-- **Worker Nodes**: Deployed as Nutanix VMs via CAPX  
+- **Worker Nodes**: Deployed as Nutanix VMs via CAPX
 - **Target**: CAPI v1beta2 ClusterClass with templateRef patterns
 
 ## Prerequisites
@@ -92,10 +92,6 @@ This chart creates:
 - `NutanixMachineTemplate` (worker VMs)
 - `NutanixCluster` (infrastructure)
 - `ProviderTemplate` + `ProviderInterface` (CAPX installation)
-
-## Documentation
-
-For detailed usage and examples, see [NUTANIX.md](../../NUTANIX.md).
 
 ## Support
 

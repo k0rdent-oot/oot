@@ -15,6 +15,7 @@ spec:
       namespace: {{ .Values.capx.namespace | quote }}
       {{- end }}
   capiOperator:
+    # ToDo: make this field configurable from Helm values
     enabled: true
   helm:
     chartSpec:

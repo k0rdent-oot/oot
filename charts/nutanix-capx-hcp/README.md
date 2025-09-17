@@ -83,10 +83,6 @@ This chart creates:
 - `NutanixCluster` (infrastructure)
 - `ProviderTemplate` + `ProviderInterface` (CAPX installation)
 
-## Documentation
-
-For detailed usage and examples, see [NUTANIX.md](../../NUTANIX.md).
-
 ## Support
 
 - Repository: https://github.com/k0rdent-oot/oot
