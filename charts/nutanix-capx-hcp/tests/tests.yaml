@@ -73,9 +73,9 @@ tests:
       - equal:
           path: kind
           value: ProviderInterface
-      - contains:
-          path: spec.exposedProviders
-          content: nutanix-hcp
+      - equal:
+          path: spec.description
+          value: "Nutanix infrastructure provider for Cluster API (HCP mode)"
 
   - it: should render ProviderTemplate
     template: templates/providertemplate-capx-hcp.yaml

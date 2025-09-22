@@ -87,9 +87,9 @@ tests:
       - equal:
           path: kind
           value: ProviderInterface
-      - contains:
-          path: spec.exposedProviders
-          content: nutanix-standalone
+      - equal:
+          path: spec.description
+          value: "Nutanix infrastructure provider for Cluster API (Standalone mode)"
 
   - it: should render ProviderTemplate
     template: templates/providertemplate-capx-standalone.yaml
