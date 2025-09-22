@@ -22,7 +22,7 @@ spec:
         {{- else }}
         uuid: {{ .Values.machineDefaults.cluster.uuid | quote }}
         {{- end }}
-      subnets:
+      subnet:
       {{- range .Values.machineDefaults.subnets }}
       - type: {{ .type | quote }}
         {{- if eq .type "name" }}

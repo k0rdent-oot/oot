@@ -15,8 +15,8 @@ on:
       - "charts/nutanix-*/**"
 
 env:
-  CAPI_VERSION: v1.11.1
-  CAPX_VERSION: v1.7.0-beta.3
+  CAPI_VERSION: v1.10.4
+  CAPX_VERSION: v1.7.0
   K0SMOTRON_VERSION: v1.6.3
   K0S_VERSION: v1.33.4+k0s.0
   K0RDENT_VERSION: v1.3.1

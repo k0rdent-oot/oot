@@ -8,15 +8,7 @@ metadata:
     helm.sh/resource-policy: keep
 spec:
   providers:
-    - name: nutanix
-      type: Infrastructure
-      version: {{ .Values.capx.version | quote }}
-      {{- if .Values.capx.namespace }}
-      namespace: {{ .Values.capx.namespace | quote }}
-      {{- end }}
-  capiOperator:
-    # ToDo: make this field configurable from Helm values
-    enabled: true
+    - "nutanix"
   helm:
     chartSpec:
       chart: cluster-api-provider-nutanix

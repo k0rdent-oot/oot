@@ -13,6 +13,3 @@ spec:
   clusterIdentityKinds:
     - Secret
   description: "Nutanix infrastructure provider for Cluster API (HCP mode)"
-  exposedProviders:
-    - nutanix-hcp
-  contract: v1beta1
