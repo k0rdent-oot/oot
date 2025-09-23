@@ -20,9 +20,10 @@ spec:
   helm:
     chartSpec:
       chart: cluster-api-provider-nutanix
-      version: {{ .Chart.Version | quote }}
+      version: {{ .Values.capx.version | quote }}
       interval: 10m0s
+      reconcileStrategy: ChartVersion
       sourceRef:
         kind: HelmRepository
-        name: oot-repo
+        name: kcm-templates
 {{- end }}
