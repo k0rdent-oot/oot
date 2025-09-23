@@ -10,22 +10,22 @@ templates:
   - templates/providerinterface-capx-standalone.yaml
   - templates/providertemplate-capx-standalone.yaml
 tests:
-  - it: should render ClusterClass with correct apiVersion and templateRef
+  - it: should render ClusterClass with correct apiVersion and ref
     template: templates/clusterclass-nutanix-k0s-standalone.yaml
     asserts:
       - equal:
           path: apiVersion
-          value: cluster.x-k8s.io/v1beta2
+          value: cluster.x-k8s.io/v1beta1
       - equal:
           path: kind
           value: ClusterClass
       - equal:
-          path: spec.controlPlane.templateRef.kind
+          path: spec.controlPlane.ref.kind
           value: K0sControlPlaneTemplate
       - exists:
           path: spec.controlPlane.machineInfrastructure
       - equal:
-          path: spec.controlPlane.machineInfrastructure.templateRef.kind
+          path: spec.controlPlane.machineInfrastructure.ref.kind
           value: NutanixMachineTemplate
 
   - it: should render K0sControlPlaneTemplate
@@ -87,16 +87,16 @@ tests:
       - equal:
           path: kind
           value: ProviderInterface
-      - contains:
-          path: spec.exposedProviders
-          content: nutanix-standalone
+      - equal:
+          path: spec.description
+          value: "Nutanix infrastructure provider for Cluster API (Standalone mode)"
 
-  - it: should render ProviderTemplate
+  - it: should render InfrastructureProvider
     template: templates/providertemplate-capx-standalone.yaml
     asserts:
       - equal:
           path: apiVersion
-          value: k0rdent.mirantis.com/v1beta1
+          value: operator.cluster.x-k8s.io/v1alpha2
       - equal:
           path: kind
-          value: ProviderTemplate
+          value: InfrastructureProvider
