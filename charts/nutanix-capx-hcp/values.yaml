@@ -5,11 +5,15 @@
 # CAPX provider configuration
 capx:
   version: v1.7.0 # @schema description: CAPX controller manager/operator version; type: string
-  namespace: capx-system # @schema description: Namespace for CAPX controller; type: string
+  namespace: kcm-system # @schema description: Namespace for CAPX controller; type: string
 
 # Provider template configuration
 providerTemplate: # @schema description: ProviderTemplate configuration; type: object
   enabled: true # @schema description: Enable ProviderTemplate emission; type: boolean
+
+# ClusterClass configuration
+clusterClass: # @schema description: ClusterClass configuration; type: object
+  enabled: true # @schema description: Enable ClusterClass creation (requires ClusterTopology feature flag); type: boolean
 
 # Nutanix infrastructure configuration
 nutanix: # @schema description: Nutanix Prism Central and cluster configuration; type: object
@@ -36,10 +40,10 @@ machineDefaults: # @schema description: Default machine configuration for Nutani
     type: name # @schema description: Cluster reference type (name or uuid); type: string; enum: [name, uuid]
     name: "" # @schema description: Cluster name (when type is name); type: string
     uuid: "" # @schema description: Cluster UUID (when type is uuid); type: string
-  subnets: # @schema description: Network subnet configuration; type: array
-    - type: name # @schema description: Subnet reference type (name or uuid); type: string; enum: [name, uuid]
-      name: "" # @schema description: Subnet name (when type is name); type: string
-      uuid: "" # @schema description: Subnet UUID (when type is uuid); type: string
+  subnet: # @schema description: Network subnet configuration; type: object
+    type: name # @schema description: Subnet reference type (name or uuid); type: string; enum: [name, uuid]
+    name: "" # @schema description: Subnet name (when type is name); type: string
+    uuid: "" # @schema description: Subnet UUID (when type is uuid); type: string
   bootType: legacy # @schema description: Boot type for VMs; type: string; enum: [legacy, uefi]
   vcpusPerSocket: 1 # @schema description: vCPUs per socket; type: number; minimum: 1
   vcpuSockets: 2 # @schema description: Number of vCPU sockets; type: number; minimum: 1

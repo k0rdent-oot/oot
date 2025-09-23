@@ -6,7 +6,7 @@ This Helm chart deploys a Nutanix CAPX infrastructure provider for Kubernetes cl
 
 - **Control Plane**: Runs as k0smotron pods in the management cluster
 - **Worker Nodes**: Deployed as Nutanix VMs via CAPX
-- **Target**: CAPI v1beta2 ClusterClass with templateRef patterns
+- **Target**: CAPI v1beta1 ClusterClass with ref patterns
 
 ## Prerequisites
 
@@ -17,8 +17,44 @@ This Helm chart deploys a Nutanix CAPX infrastructure provider for Kubernetes cl
 
 ## Installation
 
+**Important**: All resources are deployed to the `kcm-system` namespace, consistent with other k0rdent providers. The CAPX infrastructure provider will be managed by the CAPI Operator alongside AWS, Azure, and other providers.
+
+### Basic Installation (Provider Only)
+
+Install the Nutanix infrastructure provider without ClusterClass:
+
 ```bash
-helm install nutanix-hcp oci://ghcr.io/k0rdent-oot/oot/charts/nutanix-capx-hcp -n kcm-system
+helm install nutanix-hcp oci://ghcr.io/k0rdent-oot/oot/charts/nutanix-capx-hcp -n kcm-system \
+  --set clusterClass.enabled=false \
+  --set nutanix.prismCentral.address="YOUR_PRISM_IP" \
+  --set nutanix.controlPlaneEndpoint.host="YOUR_VIP" \
+  --set machineDefaults.image.name="your-k0s-image" \
+  --set machineDefaults.cluster.name="your-pe-cluster" \
+  --set machineDefaults.subnet.name="your-network"
+```
+
+### Full Installation (With ClusterClass)
+
+Install with ClusterClass (requires ClusterTopology feature flag enabled in CAPI):
+
+```bash
+helm install nutanix-hcp oci://ghcr.io/k0rdent-oot/oot/charts/nutanix-capx-hcp -n kcm-system \
+  --set clusterClass.enabled=true \
+  --set nutanix.prismCentral.address="YOUR_PRISM_IP" \
+  --set nutanix.controlPlaneEndpoint.host="YOUR_VIP" \
+  --set machineDefaults.image.name="your-k0s-image" \
+  --set machineDefaults.cluster.name="your-pe-cluster" \
+  --set machineDefaults.subnet.name="your-network"
+```
+
+### Upgrade to Enable ClusterClass
+
+Enable ClusterClass later (after enabling ClusterTopology):
+
+```bash
+helm upgrade nutanix-hcp oci://ghcr.io/k0rdent-oot/oot/charts/nutanix-capx-hcp -n kcm-system \
+  --reuse-values \
+  --set clusterClass.enabled=true
 ```
 
 ## Configuration
@@ -37,8 +73,8 @@ machineDefaults:
     name: "ubuntu-22.04-k0s"  # Your prepared image
   cluster:
     name: "PE-Cluster-01"     # Your PE cluster
-  subnets:
-    - name: "VM-Network"      # Your network
+  subnet:
+    name: "VM-Network"        # Your network
 ```
 
 ### Credentials
@@ -76,12 +112,13 @@ spec:
 ## Resources Created
 
 This chart creates:
-- `ClusterClass` (nutanix-k0s-hcp)
+- `InfrastructureProvider` (CAPX installation)
+- `ProviderInterface` (k0rdent integration)
+- `NutanixCluster` (infrastructure)
 - `K0smotronControlPlaneTemplate` (hosted control plane)
 - `K0sWorkerConfigTemplate` (worker bootstrap)
 - `NutanixMachineTemplate` (worker VMs only)
-- `NutanixCluster` (infrastructure)
-- `ProviderTemplate` + `ProviderInterface` (CAPX installation)
+- `ClusterClass` (nutanix-k0s-hcp) - Optional, when clusterClass.enabled=true
 
 ## Support
 
