@@ -1,3 +1,4 @@
+{{- if .Values.clusterClass.enabled }}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: ClusterClass
@@ -7,12 +8,12 @@ metadata:
     {{- include "nutanix-capx-hcp.labels" . | nindent 4 }}
 spec:
   controlPlane:
-    templateRef:
+    ref:
       apiVersion: controlplane.cluster.x-k8s.io/v1beta1
       kind: K0smotronControlPlaneTemplate
       name: {{ include "nutanix-capx-hcp.controlPlaneTemplateName" . }}
   infrastructure:
-    templateRef:
+    ref:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       kind: NutanixCluster
       name: {{ include "nutanix-capx-hcp.clusterTemplateName" . }}
@@ -21,12 +22,12 @@ spec:
     - class: default-worker
       template:
         bootstrap:
-          templateRef:
+          ref:
             apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
             kind: K0sWorkerConfigTemplate
             name: {{ include "nutanix-capx-hcp.workerBootstrapTemplateName" . }}
         infrastructure:
-          templateRef:
+          ref:
             apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
             kind: NutanixMachineTemplate
             name: {{ include "nutanix-capx-hcp.workerMachineTemplateName" . }}
@@ -173,3 +174,4 @@ spec:
                       type: string
                     effect:
                       type: string
+{{- end }}

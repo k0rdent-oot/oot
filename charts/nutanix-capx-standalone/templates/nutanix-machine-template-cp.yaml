@@ -22,15 +22,13 @@ spec:
         {{- else }}
         uuid: {{ .Values.machineDefaults.cluster.uuid | quote }}
         {{- end }}
-      subnets:
-      {{- range .Values.machineDefaults.subnets }}
-      - type: {{ .type | quote }}
-        {{- if eq .type "name" }}
-        name: {{ .name | quote }}
+      subnet:
+      - type: {{ .Values.machineDefaults.subnet.type | default "name" | quote }}
+        {{- if eq (.Values.machineDefaults.subnet.type | default "name") "name" }}
+        name: {{ .Values.machineDefaults.subnet.name | quote }}
         {{- else }}
-        uuid: {{ .uuid | quote }}
+        uuid: {{ .Values.machineDefaults.subnet.uuid | quote }}
         {{- end }}
-      {{- end }}
       bootType: {{ .Values.machineDefaults.bootType | quote }}
       vcpusPerSocket: {{ .Values.controlPlane.vcpusPerSocket | default .Values.machineDefaults.vcpusPerSocket }}
       vcpuSockets: {{ .Values.controlPlane.vcpuSockets | default .Values.machineDefaults.vcpuSockets }}

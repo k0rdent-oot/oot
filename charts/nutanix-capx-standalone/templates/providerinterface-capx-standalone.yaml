@@ -13,6 +13,3 @@ spec:
   clusterIdentityKinds:
     - Secret
   description: "Nutanix infrastructure provider for Cluster API (Standalone mode)"
-  exposedProviders:
-    - nutanix-standalone
-  contract: v1beta1
