@@ -9,17 +9,17 @@ templates:
   - templates/providerinterface-capx-hcp.yaml
   - templates/providertemplate-capx-hcp.yaml
 tests:
-  - it: should render ClusterClass with correct apiVersion and templateRef
+  - it: should render ClusterClass with correct apiVersion and ref
     template: templates/clusterclass-nutanix-k0s-hcp.yaml
     asserts:
       - equal:
           path: apiVersion
-          value: cluster.x-k8s.io/v1beta2
+          value: cluster.x-k8s.io/v1beta1
       - equal:
           path: kind
           value: ClusterClass
       - equal:
-          path: spec.controlPlane.templateRef.kind
+          path: spec.controlPlane.ref.kind
           value: K0smotronControlPlaneTemplate
       - notExists:
           path: spec.controlPlane.machineInfrastructure
@@ -73,16 +73,16 @@ tests:
       - equal:
           path: kind
           value: ProviderInterface
-      - contains:
-          path: spec.exposedProviders
-          content: nutanix-hcp
+      - equal:
+          path: spec.description
+          value: "Nutanix infrastructure provider for Cluster API (HCP mode)"
 
-  - it: should render ProviderTemplate
+  - it: should render InfrastructureProvider
     template: templates/providertemplate-capx-hcp.yaml
     asserts:
       - equal:
           path: apiVersion
-          value: k0rdent.mirantis.com/v1beta1
+          value: operator.cluster.x-k8s.io/v1alpha2
       - equal:
           path: kind
-          value: ProviderTemplate
+          value: InfrastructureProvider
