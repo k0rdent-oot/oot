@@ -1,29 +1,18 @@
 {{- if .Values.providerTemplate.enabled }}
 ---
-apiVersion: k0rdent.mirantis.com/v1beta1
-kind: ProviderTemplate
+apiVersion: operator.cluster.x-k8s.io/v1alpha2
+kind: InfrastructureProvider
 metadata:
-  name: cluster-api-provider-nutanix-standalone
-  annotations:
-    helm.sh/resource-policy: keep
+  name: nutanix
+  namespace: {{ .Values.capx.namespace | default "kcm-system" }}
 spec:
-  providers:
-    - name: nutanix
-      type: Infrastructure
-      version: {{ .Values.capx.version | quote }}
-      {{- if .Values.capx.namespace }}
-      namespace: {{ .Values.capx.namespace | quote }}
-      {{- end }}
-  capiOperator:
-    # ToDo: make this field configurable from Helm values
-    enabled: true
-  helm:
-    chartSpec:
-      chart: cluster-api-provider-nutanix
-      version: {{ .Values.capx.version | quote }}
-      interval: 10m0s
-      reconcileStrategy: ChartVersion
-      sourceRef:
-        kind: HelmRepository
-        name: kcm-templates
+  version: {{ .Values.capx.version | quote }}
+  {{- if .Values.capx.configSecret }}
+  configSecret:
+    name: {{ .Values.capx.configSecret.name | default "nutanix-creds" }}
+    namespace: {{ .Values.capx.configSecret.namespace | default "kcm-system" }}
+  {{- end }}
+  {{- if .Values.capx.manager }}
+  manager: {{ toYaml .Values.capx.manager | nindent 4 }}
+  {{- end }}
 {{- end }}
