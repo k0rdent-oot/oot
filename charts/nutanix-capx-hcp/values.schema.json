@@ -33,6 +33,20 @@
                 }
             }
         },
+        "clusterClass": {
+            "description": "ClusterClass configuration",
+            "type": [
+                "object"
+            ],
+            "properties": {
+                "enabled": {
+                    "description": "Enable ClusterClass creation (requires ClusterTopology feature flag)",
+                    "type": [
+                        "boolean"
+                    ]
+                }
+            }
+        },
         "clusterAnnotations": {
             "description": "Annotations to apply to the cluster",
             "type": [
