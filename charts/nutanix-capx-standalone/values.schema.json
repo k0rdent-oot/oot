@@ -348,36 +348,33 @@
                         "string"
                     ]
                 },
-                "subnets": {
+                "subnet": {
                     "description": "Network subnet configuration",
                     "type": [
-                        "array"
+                        "object"
                     ],
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {
-                                "description": "Subnet name (when type is name)",
-                                "type": [
-                                    "string"
-                                ]
-                            },
-                            "type": {
-                                "description": "Subnet reference type (name or uuid)",
-                                "type": [
-                                    "string"
-                                ],
-                                "enum": [
-                                    "name",
-                                    "uuid"
-                                ]
-                            },
-                            "uuid": {
-                                "description": "Subnet UUID (when type is uuid)",
-                                "type": [
-                                    "string"
-                                ]
-                            }
+                    "properties": {
+                        "name": {
+                            "description": "Subnet name (when type is name)",
+                            "type": [
+                                "string"
+                            ]
+                        },
+                        "type": {
+                            "description": "Subnet reference type (name or uuid)",
+                            "type": [
+                                "string"
+                            ],
+                            "enum": [
+                                "name",
+                                "uuid"
+                            ]
+                        },
+                        "uuid": {
+                            "description": "Subnet UUID (when type is uuid)",
+                            "type": [
+                                "string"
+                            ]
                         }
                     }
                 },
