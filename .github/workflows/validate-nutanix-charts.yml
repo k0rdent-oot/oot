@@ -56,12 +56,12 @@ jobs:
         if: matrix.chart.name == 'nutanix-capx-hcp'
         run: |
           echo "Checking HCP-specific requirements..."
-          grep -q "apiVersion: cluster.x-k8s.io/v1beta2" output.yaml
+          grep -q "apiVersion: cluster.x-k8s.io/v1beta1" output.yaml
           grep -q "kind: K0smotronControlPlaneTemplate" output.yaml
           grep -q "kind: K0sWorkerConfigTemplate" output.yaml
           grep -q "kind: NutanixMachineTemplate" output.yaml
           grep -q "kind: NutanixCluster" output.yaml
-          grep -q "templateRef:" output.yaml
+          grep -q "ref:" output.yaml
           # HCP should NOT have control plane machineInfrastructure
           ! grep -A5 "controlPlane:" output.yaml | grep -q "machineInfrastructure"
 
@@ -69,11 +69,11 @@ jobs:
         if: matrix.chart.name == 'nutanix-capx-standalone'
         run: |
           echo "Checking Standalone-specific requirements..."
-          grep -q "apiVersion: cluster.x-k8s.io/v1beta2" output.yaml
+          grep -q "apiVersion: cluster.x-k8s.io/v1beta1" output.yaml
           grep -q "kind: K0sControlPlaneTemplate" output.yaml
           grep -q "kind: K0sWorkerConfigTemplate" output.yaml
           grep -q "kind: NutanixMachineTemplate" output.yaml
           grep -q "kind: NutanixCluster" output.yaml
-          grep -q "templateRef:" output.yaml
+          grep -q "ref:" output.yaml
           # Standalone SHOULD have control plane machineInfrastructure
           grep -A10 "controlPlane:" output.yaml | grep -q "machineInfrastructure"
