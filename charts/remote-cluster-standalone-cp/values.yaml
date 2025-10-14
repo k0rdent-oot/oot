@@ -1,54 +1,68 @@
 # Cluster parameters
 controlPlaneNumber: 1 # @schema description: The number of control plane nodes; type: integer; minimum: 1; maximum: 5
-workersNumber: 2 # @schema description: The number of worker nodes; type: integer; minimum: 0
+workersNumber: 1 # @schema description: The number of worker nodes; type: integer; minimum: 0
 
 clusterIdentity: # @schema description: The Service Account credentials secret reference, auto-populated; type: object
   name: "" # @schema description: The Service Account credentials secret name, auto-populated; type: string
 
-cluster: # @schema description: Basic cluster information; type: object
-  name: "" # @schema description: The name of the cluster; type: string
-  namespace: "" # @schema description: The namespace where cluster resources will be created; type: string
-
 clusterNetwork: # @schema description: The cluster network configuration; type: object
   apiServerHost: 192.168.1.11 # @schema description: The host address the API Server should bind to; type: string
   apiServerPort: 6443 # @schema description: The port the API Server should bind to; type: integer; minimum: 1; maximum: 65535
-  pods: # @schema description: The network ranges from which Pod networks are allocated; type: object
-    cidrBlocks: # @schema description: A list of CIDR blocks; type: array; items: {type: string}
-      - "10.244.0.0/16"
-  services: # @schema description: The network ranges from which service VIPs are allocated; type: object
-    cidrBlocks: # @schema description: A list of CIDR blocks; type: array; items: {type: string}
-      - "10.96.0.0/12"
-  dns: # @schema description: DNS configuration for the cluster; type: object
-    domain: "" # @schema description: The cluster domain; type: string
 
-clusterLabels: {} # @schema description: Labels to apply to the cluster; type: object; additionalProperties: true
-clusterAnnotations: {} # @schema description: Annotations to apply to the cluster; type: object; additionalProperties: true
+# Control plane configuration
+controlPlane: # @schema description: Control plane configuration; type: object
+  useSystemHostname: true # @schema description: Use system hostname for kubernetes node name; type: boolean
+
+# Worker configuration
+worker: # @schema description: Worker node configuration; type: object
+  useSystemHostname: true # @schema description: Use system hostname for kubernetes node name; type: boolean
 
 # K0s parameters
 k0s: # @schema description: K0s parameters; type: object
-  version: v1.33.1+k0s.0 # @schema description: K0s version; type: string
+  version: v1.33.4+k0s.0 # @schema description: K0s version; type: string
+  args: # @schema description: Arguments to pass to k0s controller; type: array; items: {type: string}
+    - --enable-worker
+    - --no-taints
+    - --enable-dynamic-config
+    - --disable-components=konnectivity-server
+  clusterConfig: # @schema description: Cluster configuration metadata; type: object
+    name: k0s # @schema description: K0s cluster config name; type: string
+    namespace: kube-system # @schema description: K0s cluster config namespace; type: string
   api: # @schema description: Kubernetes API server parameters; type: object
-    extraArgs: {} # @schema description: Map of key-values (strings) for any extra arguments to pass down to Kubernetes api-server process; type: object; additionalProperties: string
+    extraArgs: # @schema description: Map of key-values (strings) for any extra arguments to pass down to Kubernetes api-server process; type: object; additionalProperties: string
+      anonymous-auth: "true" # @schema description: Enable anonymous authentication; type: string
+      kubelet-preferred-address-types: "ExternalIP,InternalDNS,ExternalDNS" # @schema description: List of the preferred NodeAddressTypes to use for kubelet connections; type: string
+  network: # @schema description: Network configuration for K0s; type: object
+    dualStack: # @schema description: Dual stack configuration; type: object
+      enabled: false # @schema description: Enable dual stack networking; type: boolean
+    controlPlaneLoadBalancing: # @schema description: Control plane load balancing configuration; type: object
+      enabled: false # @schema description: Enable control plane load balancing; type: boolean
+    calico: # @schema description: Calico network provider configuration; type: object
+      mode: vxlan # @schema description: Calico backend mode; type: string; enum: [vxlan, ipip, bird]
+      ipAutodetectionMethod: can-reach=8.8.8.8 # @schema description: Method for detecting node IP address; type: string
+      envVars: # @schema description: Environment variables for Calico; type: object; additionalProperties: string
+        FELIX_IGNORELOOSERPF: "true" # @schema description: Ignore loose RPF check failures; type: string
+        FELIX_ALLOWVXLANPACKETSFROMWORKLOADS: "true" # @schema description: Allow VXLAN packets from workloads; type: string
 
 # Remote machine pools configuration
-remoteMachines: # @schema description: Configuration for remote machine pools; type: object
-  controlPlane: # @schema description: Control plane machines configuration; type: array
-    - name: cp-1 # @schema description: Name of the machine; type: string
-      address: 192.168.1.11 # @schema description: IP address or hostname of the machine; type: string
-      port: 22 # @schema description: SSH port; type: integer; minimum: 1; maximum: 65535
-      user: root # @schema description: SSH user; type: string
-      sshKeyRef: # @schema description: SSH key reference; type: object
-        name: cp-1-ssh # @schema description: Name of the SSH key secret; type: string
-  worker: # @schema description: Worker machines configuration; type: array
-    - name: worker-1 # @schema description: Name of the machine; type: string
-      address: 192.168.1.21 # @schema description: IP address or hostname of the machine; type: string
-      port: 22 # @schema description: SSH port; type: integer; minimum: 1; maximum: 65535
-      user: root # @schema description: SSH user; type: string
-      sshKeyRef: # @schema description: SSH key reference; type: object
-        name: worker-1-ssh # @schema description: Name of the SSH key secret; type: string
-    - name: worker-2 # @schema description: Name of the machine; type: string
-      address: 192.168.1.22 # @schema description: IP address or hostname of the machine; type: string
-      port: 22 # @schema description: SSH port; type: integer; minimum: 1; maximum: 65535
-      user: root # @schema description: SSH user; type: string
-      sshKeyRef: # @schema description: SSH key reference; type: object
-        name: worker-2-ssh # @schema description: Name of the SSH key secret; type: string
+# remoteMachines: # @schema description: Configuration for remote machine pools; type: object
+#   controlPlane: # @schema description: Control plane machines configuration; type: array
+#     - name: cp-1 # @schema description: Name of the machine; type: string
+#       address: 192.168.1.11 # @schema description: IP address or hostname of the machine; type: string
+#       port: 22 # @schema description: SSH port; type: integer; minimum: 1; maximum: 65535
+#       user: root # @schema description: SSH user; type: string
+#       sshKeyRef: # @schema description: SSH key reference; type: object
+#         name: cp-1-ssh # @schema description: Name of the SSH key secret; type: string
+#   worker: # @schema description: Worker machines configuration; type: array
+#     - name: worker-1 # @schema description: Name of the machine; type: string
+#       address: 192.168.1.21 # @schema description: IP address or hostname of the machine; type: string
+#       port: 22 # @schema description: SSH port; type: integer; minimum: 1; maximum: 65535
+#       user: root # @schema description: SSH user; type: string
+#       sshKeyRef: # @schema description: SSH key reference; type: object
+#         name: worker-1-ssh # @schema description: Name of the SSH key secret; type: string
+#     - name: worker-2 # @schema description: Name of the machine; type: string
+#       address: 192.168.1.22 # @schema description: IP address or hostname of the machine; type: string
+#       port: 22 # @schema description: SSH port; type: integer; minimum: 1; maximum: 65535
+#       user: root # @schema description: SSH user; type: string
+#       sshKeyRef: # @schema description: SSH key reference; type: object
+#         name: worker-2-ssh # @schema description: Name of the SSH key secret; type: string

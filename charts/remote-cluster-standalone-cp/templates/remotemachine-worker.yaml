@@ -1,21 +1,23 @@
+{{- if gt (int .Values.workersNumber) 0 }}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: RemoteMachineTemplate
 metadata:
   name: {{ include "remotemachinetemplate.worker.name" . }}
-  namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
+  namespace: {{ .Release.Namespace }}
 spec:
   template:
     spec:
       pool: worker
 
 ---
+{{- if .Values.remoteMachines }}
 {{- range $index, $machine := .Values.remoteMachines.worker }}
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: PooledRemoteMachine
 metadata:
   name: {{ $machine.name }}
-  namespace: {{ $.Values.cluster.namespace | default $.Release.Namespace | trunc 63 }}
+  namespace: {{ $.Release.Namespace }}
 spec:
   pool: worker
   machine:
@@ -25,4 +27,6 @@ spec:
     sshKeyRef:
       name: {{ $machine.sshKeyRef.name }}
 ---
+{{- end }}
+{{- end }}
 {{- end }}

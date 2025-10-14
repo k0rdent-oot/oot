@@ -1,8 +1,9 @@
+{{- if gt (int .Values.workersNumber) 0 }}
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
   name: {{ include "machinedeployment.name" . }}
-  namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
+  namespace: {{ .Release.Namespace }}
 spec:
   clusterName: {{ include "cluster.name" . }}
   replicas: {{ .Values.workersNumber }}
@@ -13,6 +14,17 @@ spec:
     metadata:
       labels:
         cluster.x-k8s.io/cluster-name: {{ include "cluster.name" . }}
+        {{- if .Values.worker.machineTemplate }}
+        {{- with .Values.worker.machineTemplate.metadata.labels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- end }}
+      {{- if .Values.worker.machineTemplate }}
+      {{- with .Values.worker.machineTemplate.metadata.annotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- end }}
     spec:
       version: {{ (split "+" .Values.k0s.version)._0 }}
       clusterName: {{ include "cluster.name" . }}
@@ -21,9 +33,10 @@ spec:
           apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
           kind: K0sWorkerConfigTemplate
           name: {{ include "k0sworkerconfigtemplate.name" . }}
-          namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
+          namespace: {{ .Release.Namespace }}
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: RemoteMachineTemplate
         name: {{ include "remotemachinetemplate.worker.name" . }}
-        namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
+        namespace: {{ .Release.Namespace }}
+{{- end }}
