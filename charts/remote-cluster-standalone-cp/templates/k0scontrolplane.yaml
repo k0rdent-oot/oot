@@ -2,37 +2,129 @@ apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: K0sControlPlane
 metadata:
   name: {{ include "k0scontrolplane.name" . }}
-  namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
+  namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.controlPlaneNumber }}
   version: {{ .Values.k0s.version }}
   k0sConfigSpec:
+    {{- if .Values.k0s.downloadURL }}
+    downloadURL: "{{ .Values.k0s.downloadURL }}"
+    {{- end }}
+    {{- if .Values.controlPlane.k0sInstallDir }}
+    k0sInstallDir: "{{ .Values.controlPlane.k0sInstallDir }}"
+    {{- end }}
+    {{- with .Values.k0s.args }}
     args:
-      - --enable-worker
-    useSystemHostname: true
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    useSystemHostname: {{ .Values.controlPlane.useSystemHostname }}
+    {{- if .Values.controlPlane.preInstalledK0s }}
+    preInstalledK0s: {{ .Values.controlPlane.preInstalledK0s }}
+    {{- end }}
+    {{- if .Values.controlPlane.files }}
+    files:
+      {{- toYaml .Values.controlPlane.files | nindent 6 }}
+    {{- end }}
+    {{- with .Values.controlPlane.preStartCommands }}
+    preStartCommands:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.controlPlane.postStartCommands }}
+    postStartCommands:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.controlPlane.tunneling }}
+    tunneling:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
     k0s:
       apiVersion: k0s.k0sproject.io/v1beta1
       kind: ClusterConfig
       metadata:
-        name: k0s
+        name: {{ .Values.k0s.clusterConfig.name | default "k0s" }}
+        namespace: {{ .Values.k0s.clusterConfig.namespace | default "kube-system" }}
       spec:
+        {{- if .Values.k0s.telemetry }}
+        telemetry:
+          enabled: {{ .Values.k0s.telemetry.enabled }}
+        {{- end }}
+        storage:
+          type: etcd
+          {{- if and .Values.k0s.storage .Values.k0s.storage.etcd }}
+          etcd:
+            {{- toYaml .Values.k0s.storage.etcd | nindent 12 }}
+          {{- end }}
         api:
+          {{- if .Values.k0s.api.externalAddress }}
+          externalAddress: {{ .Values.k0s.api.externalAddress }}
+          {{- end }}
+          {{- if .Values.k0s.api.sans }}
+          sans:
+            {{- toYaml .Values.k0s.api.sans | nindent 12 }}
+          {{- end }}
+          {{- if .Values.k0s.api.extraArgs }}
           extraArgs:
-            anonymous-auth: "true"
-            kubelet-preferred-address-types: "ExternalIP,InternalDNS,ExternalDNS"
-          {{- with .Values.k0s.api.extraArgs }}
-            {{- toYaml . | nindent 12 }}
+            {{- toYaml .Values.k0s.api.extraArgs | nindent 12 }}
           {{- end }}
         network:
           {{- if and .Values.clusterNetwork.dns .Values.clusterNetwork.dns.domain }}
           clusterDomain: {{ .Values.clusterNetwork.dns.domain }}
           {{- end }}
           provider: calico
+          {{- if .Values.clusterNetwork.pods }}
+          podCIDR: {{ index .Values.clusterNetwork.pods.cidrBlocks 0 }}
+          {{- end }}
+          {{- if .Values.clusterNetwork.services }}
+          serviceCIDR: {{ index .Values.clusterNetwork.services.cidrBlocks 0 }}
+          {{- end }}
+          {{- if .Values.k0s.network.dualStack }}
+          dualStack:
+            {{- toYaml .Values.k0s.network.dualStack | nindent 12 }}
+          {{- end }}
+          {{- with .Values.k0s.network.calico }}
           calico:
-            mode: vxlan
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if .Values.k0s.network.controlPlaneLoadBalancing }}
+          controlPlaneLoadBalancing:
+            {{- toYaml .Values.k0s.network.controlPlaneLoadBalancing | nindent 12 }}
+          {{- end }}
+        {{- with .Values.k0s.extensions }}
+        extensions:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- if .Values.k0s.workerProfiles }}
+        workerProfiles:
+        {{- range .Values.k0s.workerProfiles }}
+        - name: {{ .name }}
+          {{- if .values }}
+          values:
+            {{- toYaml .values | nindent 12 }}
+          {{- end }}
+          {{- range $key, $value := . }}
+          {{- if and (ne $key "name") (ne $key "values") }}
+          {{ $key }}:
+            {{- toYaml $value | nindent 12 }}
+          {{- end }}
+          {{- end }}
+        {{- end }}
+        {{- end }}
   machineTemplate:
+    {{- if .Values.controlPlane.machineTemplate }}
+    {{- if or .Values.controlPlane.machineTemplate.metadata.labels .Values.controlPlane.machineTemplate.metadata.annotations }}
+    metadata:
+      {{- with .Values.controlPlane.machineTemplate.metadata.labels }}
+      labels:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.controlPlane.machineTemplate.metadata.annotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- end }}
+    {{- end }}
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       kind: RemoteMachineTemplate
       name: {{ include "remotemachinetemplate.controlplane.name" . }}
-      namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
+      namespace: {{ .Release.Namespace }}
