@@ -39,7 +39,7 @@ spec:
 apiVersion: k0rdent.mirantis.com/v1beta1
 kind: ClusterTemplate
 metadata:
-  name: remote-cluster-standalone-cp-1.1.0
+  name: remote-cluster-standalone-cp-1.1.1
   namespace: kcm-system
   annotations:
     helm.sh/resource-policy: keep
@@ -47,7 +47,7 @@ spec:
   helm:
     chartSpec:
       chart: remote-cluster-standalone-cp
-      version: 1.1.0
+      version: 1.1.1
       interval: 10m0s
       sourceRef:
         kind: HelmRepository
@@ -118,26 +118,23 @@ metadata:
   name: remote-cluster-standalone-demo
   namespace: kcm-system
 spec:
-  template: remote-cluster-standalone-cp-1.1.0
+  template: remote-cluster-standalone-cp-1.1.1
   credential: remote-cluster-identity-cred
   config:
     clusterNetwork:
       apiServerHost: 10.42.71.102
     controlPlaneNumber: 1
     workersNumber: 1
+    # See https://docs.k0smotron.io/stable/resource-reference/infrastructure.cluster.x-k8s.io-v1beta1/#pooledremotemachinespecmachine
     remoteMachines:
       controlPlane:
         - name: cp-1
           address: 10.42.71.102
-          port: 22
-          user: root
           sshKeyRef:
             name: remote-machine-ssh
       worker:
         - name: worker-1
           address: 10.42.71.103
-          port: 22
-          user: root
           sshKeyRef:
             name: remote-machine-ssh
 EOF

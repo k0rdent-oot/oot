@@ -45,24 +45,7 @@ k0s: # @schema description: K0s parameters; type: object
         FELIX_ALLOWVXLANPACKETSFROMWORKLOADS: "true" # @schema description: Allow VXLAN packets from workloads; type: string
 
 # Remote machine pools configuration
-# remoteMachines: # @schema description: Configuration for remote machine pools; type: object
-#   controlPlane: # @schema description: Control plane machines configuration; type: array
-#     - name: cp-1 # @schema description: Name of the machine; type: string
-#       address: 192.168.1.11 # @schema description: IP address or hostname of the machine; type: string
-#       port: 22 # @schema description: SSH port; type: integer; minimum: 1; maximum: 65535
-#       user: root # @schema description: SSH user; type: string
-#       sshKeyRef: # @schema description: SSH key reference; type: object
-#         name: cp-1-ssh # @schema description: Name of the SSH key secret; type: string
-#   worker: # @schema description: Worker machines configuration; type: array
-#     - name: worker-1 # @schema description: Name of the machine; type: string
-#       address: 192.168.1.21 # @schema description: IP address or hostname of the machine; type: string
-#       port: 22 # @schema description: SSH port; type: integer; minimum: 1; maximum: 65535
-#       user: root # @schema description: SSH user; type: string
-#       sshKeyRef: # @schema description: SSH key reference; type: object
-#         name: worker-1-ssh # @schema description: Name of the SSH key secret; type: string
-#     - name: worker-2 # @schema description: Name of the machine; type: string
-#       address: 192.168.1.22 # @schema description: IP address or hostname of the machine; type: string
-#       port: 22 # @schema description: SSH port; type: integer; minimum: 1; maximum: 65535
-#       user: root # @schema description: SSH user; type: string
-#       sshKeyRef: # @schema description: SSH key reference; type: object
-#         name: worker-2-ssh # @schema description: Name of the SSH key secret; type: string
+# See https://docs.k0smotron.io/stable/resource-reference/infrastructure.cluster.x-k8s.io-v1beta1/#pooledremotemachinespec
+remoteMachines: # @schema description: Remote machine pools configuration; type: object
+  controlPlane: [] # @schema description: Control plane machines (array of {name: string, ...RemoteMachineSpec fields}); type: array
+  worker: [] # @schema description: Worker machines (array of {name: string, ...RemoteMachineSpec fields}); type: array

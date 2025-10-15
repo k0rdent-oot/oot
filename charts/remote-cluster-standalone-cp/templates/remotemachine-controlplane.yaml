@@ -15,16 +15,12 @@ spec:
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: PooledRemoteMachine
 metadata:
-  name: {{ $machine.name }}
+  name: {{ $machine.name | default (printf "cp-%s" ($machine.address | adler32sum)) }}
   namespace: {{ $.Release.Namespace }}
 spec:
   pool: cp
   machine:
-    address: {{ $machine.address }}
-    port: {{ $machine.port | default 22 }}
-    user: {{ $machine.user | default "root" }}
-    sshKeyRef:
-      name: {{ $machine.sshKeyRef.name }}
+{{ toYaml (omit $machine "name") | indent 4 }}
 ---
 {{- end }}
 {{- end }}
