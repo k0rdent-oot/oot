@@ -3,14 +3,24 @@ name: Validate Nutanix Charts
 on:
   pull_request:
     paths:
-      - "charts/nutanix-*/**"
+      - ".github/workflows/validate-nutanix-charts.yml"
       - "NUTANIX.md"
+      - "charts/nutanix-*/**"
   push:
     branches:
       - main
     paths:
-      - "charts/nutanix-*/**"
+      - ".github/workflows/validate-nutanix-charts.yml"
       - "NUTANIX.md"
+      - "charts/nutanix-*/**"
+
+env:
+  CAPI_VERSION: v1.10.4
+  CAPX_VERSION: v1.7.0
+  K0SMOTRON_VERSION: v1.6.3
+  K0S_VERSION: v1.33.4+k0s.0
+  K0RDENT_VERSION: v1.3.1
+  KUBECONFORM_VERSION: v0.7.0
 
 jobs:
   validate-capx-charts:
@@ -32,6 +42,63 @@ jobs:
         with:
           version: "latest"
 
+      - name: Set up kubeconform
+        run: |
+          curl --fail -L -o kubeconform.tar.gz https://github.com/yannh/kubeconform/releases/download/${{ env.KUBECONFORM_VERSION }}/kubeconform-linux-amd64.tar.gz && \
+          tar -xzf kubeconform.tar.gz && \
+          sudo mv kubeconform /usr/local/bin/ && \
+          kubeconform -v
+
+      - name: Setup CRDs directory
+        run: |
+          echo "Using versions: CAPI=${{ env.CAPI_VERSION }}, CAPX=${{ env.CAPX_VERSION }}, k0smotron=${{ env.K0SMOTRON_VERSION }}"
+          mkdir -p crds/
+
+      - name: Download CAPI Core CRDs
+        run: |
+          curl --fail https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/${{ env.CAPI_VERSION }}/config/crd/bases/cluster.x-k8s.io_clusters.yaml > crds/cluster.x-k8s.io_clusters.yaml
+          curl --fail https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/${{ env.CAPI_VERSION }}/config/crd/bases/cluster.x-k8s.io_clusterclasses.yaml > crds/cluster.x-k8s.io_clusterclasses.yaml
+          curl --fail https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/${{ env.CAPI_VERSION }}/config/crd/bases/cluster.x-k8s.io_machinedeployments.yaml > crds/cluster.x-k8s.io_machinedeployments.yaml
+          curl --fail https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/${{ env.CAPI_VERSION }}/config/crd/bases/cluster.x-k8s.io_machines.yaml > crds/cluster.x-k8s.io_machines.yaml
+          curl --fail https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/${{ env.CAPI_VERSION }}/config/crd/bases/cluster.x-k8s.io_machinesets.yaml > crds/cluster.x-k8s.io_machinesets.yaml
+          curl --fail https://raw.githubusercontent.com/kubernetes-sigs/cluster-api/${{ env.CAPI_VERSION }}/config/crd/bases/cluster.x-k8s.io_machinehealthchecks.yaml > crds/cluster.x-k8s.io_machinehealthchecks.yaml
+
+      - name: Download CAPX CRDs
+        run: |
+          curl --fail https://raw.githubusercontent.com/nutanix-cloud-native/cluster-api-provider-nutanix/${{ env.CAPX_VERSION }}/config/crd/bases/infrastructure.cluster.x-k8s.io_nutanixclusters.yaml > crds/infrastructure.cluster.x-k8s.io_nutanixclusters.yaml
+          curl --fail https://raw.githubusercontent.com/nutanix-cloud-native/cluster-api-provider-nutanix/${{ env.CAPX_VERSION }}/config/crd/bases/infrastructure.cluster.x-k8s.io_nutanixmachinetemplates.yaml > crds/infrastructure.cluster.x-k8s.io_nutanixmachinetemplates.yaml
+          curl --fail https://raw.githubusercontent.com/nutanix-cloud-native/cluster-api-provider-nutanix/${{ env.CAPX_VERSION }}/config/crd/bases/infrastructure.cluster.x-k8s.io_nutanixmachines.yaml > crds/infrastructure.cluster.x-k8s.io_nutanixmachines.yaml
+
+      - name: Download k0s/k0smotron CRDs
+        run: |
+          curl --fail https://raw.githubusercontent.com/k0sproject/k0smotron/${{ env.K0SMOTRON_VERSION }}/config/crd/bases/controlplane/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml > crds/controlplane.cluster.x-k8s.io_k0smotroncontrolplanes.yaml
+          curl --fail https://raw.githubusercontent.com/k0sproject/k0smotron/${{ env.K0SMOTRON_VERSION }}/config/crd/bases/controlplane/controlplane.cluster.x-k8s.io_k0smotroncontrolplanetemplates.yaml > crds/controlplane.cluster.x-k8s.io_k0smotroncontrolplanetemplates.yaml
+          curl --fail https://raw.githubusercontent.com/k0sproject/k0smotron/${{ env.K0SMOTRON_VERSION }}/config/crd/bases/controlplane/controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml > crds/controlplane.cluster.x-k8s.io_k0scontrolplanes.yaml
+          curl --fail https://raw.githubusercontent.com/k0sproject/k0smotron/${{ env.K0SMOTRON_VERSION }}/config/crd/bases/bootstrap/bootstrap.cluster.x-k8s.io_k0sworkerconfigtemplates.yaml > crds/bootstrap.cluster.x-k8s.io_k0sworkerconfigtemplates.yaml
+
+      - name: Download k0rdent CRDs
+        run: |
+          curl --fail https://raw.githubusercontent.com/k0rdent/kcm/${{ env.K0RDENT_VERSION }}/templates/provider/kcm/templates/crds/k0rdent.mirantis.com_providertemplates.yaml > crds/k0rdent.mirantis.com_providertemplates.yaml
+          curl --fail https://raw.githubusercontent.com/k0rdent/kcm/${{ env.K0RDENT_VERSION }}/templates/provider/kcm/templates/crds/k0rdent.mirantis.com_providerinterfaces.yaml > crds/k0rdent.mirantis.com_providerinterfaces.yaml
+
+      - name: Download kubeconform's openapi2jsonschema script
+        run: |
+          curl --fail -o openapi2jsonschema.py \
+            https://raw.githubusercontent.com/yannh/kubeconform/master/scripts/openapi2jsonschema.py \
+          && chmod +x openapi2jsonschema.py
+
+      - name: Extract schemas from CRDs for kubeconform
+        run: |
+          echo "Extracting OpenAPI schemas from CRDs for kubeconform..."
+          mkdir -p schemas
+
+          for crd in crds/*.yaml; do
+            echo "Processing $crd"
+            python3 openapi2jsonschema.py "$crd"
+          done
+
+          mv -v *.json schemas/
+
       - name: Install helm-unittest
         run: helm plugin install https://github.com/helm-unittest/helm-unittest
 
@@ -51,6 +118,21 @@ jobs:
             helm template ${{ matrix.chart.name }} charts/${{ matrix.chart.name }} \
               --namespace kcm-system > output.yaml
           fi
+
+      - name: Validate chart templates
+        run: |
+          echo "Validating ${{ matrix.chart.name }}"
+          kubeconform -schema-location default -schema-location 'schemas/{{ .ResourceKind }}_{{ .ResourceAPIVersion }}.json' -summary -output json -ignore-missing-schemas -strict=false output.yaml
+
+      - name: Upload templated output on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-template-output-${{ matrix.chart.name }}
+          path: |
+            output.yaml
+            schemas/
+          retention-days: 3
 
       - name: Check HCP chart specific resources
         if: matrix.chart.name == 'nutanix-capx-hcp'
