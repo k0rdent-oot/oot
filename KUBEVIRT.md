@@ -7,9 +7,11 @@
 > Note: if using `cilium` [without `kube-proxy`](https://github.com/cilium/cilium/blob/main/Documentation/network/kubernetes/kubeproxy-free.rst), run `cilium config set bpf-lb-sock-hostns-only true`, or use [Helm chart](https://github.com/cilium/cilium/blob/main/Documentation/network/kubernetes/kubeproxy-free.rst#socket-loadbalancer-bypass-in-pod-namespace) option
 
 ```bash
-helm install kcm oci://ghcr.io/k0rdent/kcm/charts/kcm --version 1.2.0 -n kcm-system --create-namespace \
+# export KUBECONFIG=/var/lib/k0s/pki/admin.conf
+
+helm install kcm oci://ghcr.io/k0rdent/kcm/charts/kcm --version 1.4.0 -n kcm-system --create-namespace \
   --set controller.enableTelemetry=false \
-  --set velero.enabled=false
+  --set regional.velero.enabled=false
 ```
 
 ## Wait for `Management` object readiness
@@ -242,5 +244,5 @@ ip r replace \
 #### Test `kubeconfig`.
 
 ```bash
-kubectl --kubeconfig=./kubevirt-demo.kubeconfig get nodes -o wide
+kubectl --kubeconfig=kubevirt-demo.kubeconfig get nodes -o wide
 ```

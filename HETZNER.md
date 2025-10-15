@@ -3,9 +3,11 @@
 ## Install `k0rdent/kcm` into Kubernetes cluster
 
 ```bash
-helm install kcm oci://ghcr.io/k0rdent/kcm/charts/kcm --version 1.1.1 -n kcm-system --create-namespace \
+# export KUBECONFIG=/var/lib/k0s/pki/admin.conf
+
+helm install kcm oci://ghcr.io/k0rdent/kcm/charts/kcm --version 1.4.0 -n kcm-system --create-namespace \
   --set controller.enableTelemetry=false \
-  --set velero.enabled=false
+  --set regional.velero.enabled=false
 ```
 
 ## Wait for `Management` object readiness
@@ -310,32 +312,32 @@ EOF
 
 ## Steps to debug child `Hetzner` cluster deployment:
 
-#### Describe cluster status.
+### Describe cluster status.
 
 ```bash
 clusterctl describe cluster hetzner-demo -n kcm-system
 ```
 
-#### Get `ClusterDeployment` objects.
+### Get `ClusterDeployment` objects.
 
 ```bash
 kubectl get cld -A
 ```
 
-#### Get `Machine` object.
+### Get `Machine` object.
 
 ```bash
 kubectl get machine -A
 ```
 
-#### Get child cluster `kubeconfig` where `hetzner-demo` is the cluster name.
+### Get child cluster `kubeconfig` where `hetzner-demo` is the cluster name.
 
 ```bash
 clusterctl get kubeconfig hetzner-demo -n kcm-system > hetzner-demo.kubeconfig
 ```
 
-#### Test `kubeconfig`.
+### Test `kubeconfig`.
 
 ```bash
-kubectl --kubeconfig=./hetzner-demo.kubeconfig get nodes -o wide
+kubectl --kubeconfig=hetzner-demo.kubeconfig get nodes -o wide
 ```
