@@ -77,7 +77,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: oot-repo
-      version: 9999.42.0
+      version: 9999.42.1
 EOF
 
 kubectl patch management kcm --type='json' -p='[

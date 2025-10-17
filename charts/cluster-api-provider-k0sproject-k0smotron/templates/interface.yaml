@@ -13,4 +13,6 @@ spec:
     - group: ""
       version: v1
       kind: Secret
+  clusterIdentityKinds:
+    - Secret
   description: "K0smotron providers for Cluster API"
