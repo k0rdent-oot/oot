@@ -55,6 +55,48 @@ spec:
 EOF
 ```
 
+## Optionally use custom `k0smotron` `ProviderTemplate`
+
+```bash
+kubectl create -f - <<EOF
+---
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: ProviderTemplate
+metadata:
+  annotations:
+    helm.sh/resource-policy: keep
+  labels:
+    k0rdent.mirantis.com/component: kcm
+  name: cluster-api-provider-k0sproject-k0smotron
+spec:
+  helm:
+    chartSpec:
+      chart: cluster-api-provider-k0sproject-k0smotron
+      interval: 10m0s
+      reconcileStrategy: ChartVersion
+      sourceRef:
+        kind: HelmRepository
+        name: oot-repo
+      version: 9999.42.0
+EOF
+
+kubectl patch management kcm --type='json' -p='[
+  {
+    "op": "replace",
+    "path": "/spec/providers",
+    "value": [
+      {
+        "name": "cluster-api-provider-k0sproject-k0smotron",
+        "template": "cluster-api-provider-k0sproject-k0smotron"
+      },
+      {
+        "name": "projectsveltos"
+      }
+    ]
+  }
+]'
+```
+
 ## Wait for `Management` object readiness
 
 ```bash
