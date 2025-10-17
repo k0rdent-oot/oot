@@ -1,0 +1,31 @@
+version: ""
+
+# Provider fields are based on ProviderSpec from:
+# https://github.com/kubernetes-sigs/cluster-api-operator/blob/release-0.24/api/v1alpha2/provider_types.go#L40-#L91
+
+infrastructure:
+  manager: {}
+  deployment: {}
+  configSecret: {}
+  fetchConfig: {}
+  additionalManifests: {}
+  manifestPatches: []
+  additionalDeployments: {}
+
+bootstrap:
+  manager: {}
+  deployment: {}
+  configSecret: {}
+  fetchConfig: {}
+  additionalManifests: {}
+  manifestPatches: []
+  additionalDeployments: {}
+
+controlPlane:
+  manager: {}
+  deployment: {}
+  configSecret: {}
+  fetchConfig: {}
+  additionalManifests: {}
+  manifestPatches: []
+  additionalDeployments: {}

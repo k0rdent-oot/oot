@@ -1,0 +1,16 @@
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: ProviderInterface
+metadata:
+  name: cluster-api-provider-k0sproject-k0smotron
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  clusterGVKs:
+    - group: infrastructure.cluster.x-k8s.io
+      version: v1beta1
+      kind: RemoteCluster
+  clusterIdentities:
+    - group: ""
+      version: v1
+      kind: Secret
+  description: "K0smotron providers for Cluster API"

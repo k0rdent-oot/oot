@@ -1,0 +1,87 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "bootstrap": {
+            "type": "object",
+            "properties": {
+                "additionalDeployments": {
+                    "type": "object"
+                },
+                "additionalManifests": {
+                    "type": "object"
+                },
+                "configSecret": {
+                    "type": "object"
+                },
+                "deployment": {
+                    "type": "object"
+                },
+                "fetchConfig": {
+                    "type": "object"
+                },
+                "manager": {
+                    "type": "object"
+                },
+                "manifestPatches": {
+                    "type": "array"
+                }
+            }
+        },
+        "controlPlane": {
+            "type": "object",
+            "properties": {
+                "additionalDeployments": {
+                    "type": "object"
+                },
+                "additionalManifests": {
+                    "type": "object"
+                },
+                "configSecret": {
+                    "type": "object"
+                },
+                "deployment": {
+                    "type": "object"
+                },
+                "fetchConfig": {
+                    "type": "object"
+                },
+                "manager": {
+                    "type": "object"
+                },
+                "manifestPatches": {
+                    "type": "array"
+                }
+            }
+        },
+        "infrastructure": {
+            "type": "object",
+            "properties": {
+                "additionalDeployments": {
+                    "type": "object"
+                },
+                "additionalManifests": {
+                    "type": "object"
+                },
+                "configSecret": {
+                    "type": "object"
+                },
+                "deployment": {
+                    "type": "object"
+                },
+                "fetchConfig": {
+                    "type": "object"
+                },
+                "manager": {
+                    "type": "object"
+                },
+                "manifestPatches": {
+                    "type": "array"
+                }
+            }
+        },
+        "version": {
+            "type": "string"
+        }
+    }
+}

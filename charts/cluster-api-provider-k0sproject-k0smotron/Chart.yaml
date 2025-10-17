@@ -1,0 +1,9 @@
+apiVersion: v2
+name: cluster-api-provider-k0sproject-k0smotron
+description: A Helm chart for K0smotron
+type: application
+version: 9999.42.0
+appVersion: "v1.8.1"
+annotations:
+  cluster.x-k8s.io/provider: infrastructure-k0sproject-k0smotron, bootstrap-k0sproject-k0smotron, control-plane-k0sproject-k0smotron
+  cluster.x-k8s.io/v1beta1: v1beta1
