@@ -5,8 +5,8 @@
 ```bash
 # export KUBECONFIG=/var/lib/k0s/pki/admin.conf
 
-helm install kcm oci://ghcr.io/k0rdent/kcm/charts/kcm --version 1.4.0 -n kcm-system --create-namespace \
-  --set controller.enableTelemetry=false \
+helm install kcm oci://ghcr.io/k0rdent/kcm/charts/kcm --version 1.5.0 -n kcm-system --create-namespace \
+  --set regional.telemetry.mode=disabled \
   --set regional.velero.enabled=false
 ```
 

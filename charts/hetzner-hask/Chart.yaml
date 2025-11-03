@@ -3,7 +3,7 @@ name: hetzner-hask
 description: |
   A KCM hask template to deploy on Hetzner Cloud.
 type: application
-version: 1.1.1
+version: 1.2.0
 annotations:
   cluster.x-k8s.io/provider: infrastructure-hetzner, control-plane-k0sproject-k0smotron, bootstrap-k0sproject-k0smotron
   k0rdent.mirantis.com/type: deployment
