@@ -1,4 +1,3 @@
----
 apiVersion: k0rdent.mirantis.com/v1beta1
 kind: ProviderInterface
 metadata:
@@ -14,4 +13,6 @@ spec:
     - group: ""
       version: v1
       kind: Secret
+  clusterIdentityKinds:
+    - Secret
   description: "Hetzner infrastructure provider for Cluster API"
