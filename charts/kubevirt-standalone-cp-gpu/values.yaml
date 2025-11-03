@@ -223,7 +223,7 @@ worker: # @schema description: Worker parameters; type: object
 
 # K0s parameters
 k0s: # @schema description: K0s parameters; type: object
-  version: v1.33.3+k0s.0 # @schema description: K0s version; type: string
+  version: v1.33.4+k0s.0 # @schema description: K0s version; type: string
   downloadURL: "" # @schema description: Custom download URL for K0s binary. If empty, uses default K0s release URL; type: string
   disableComponents: # @schema description: List of k0s components to disable; type: array; items: string
     - konnectivity-server # @schema description: Component to disable; type: string
@@ -325,48 +325,7 @@ k0s: # @schema description: K0s parameters; type: object
               memory: 2Gi # @schema description: Memory limit; type: string; pattern: ^[0-9]+(\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|m|k|M|G|T|P|E)?$
             numaNode: 0 # @schema description: NUMA node; type: integer
         kubeReservedCgroup: "" # @schema description: Kube reserved cgroup; type: string
-  helmCharts: # @schema description: Helm chart deployment configurations; type: object
-    kubernetesCSIExternalSnapshotter: # @schema description: Kubernetes CSI external snapshotter configuration; type: object
-      enabled: false # @schema description: Enable kubernetes-csi-external-snapshotter helm chart in k0s; type: boolean
-      repo: ghcr.io/k0rdent-oot/oot/charts/ # @schema description: Chart repository; type: string
-      name: kubernetes-csi-external-snapshotter # @schema description: Chart name; type: string
-      version: "v8.2.0" # @schema description: Chart version for kubernetes-csi-external-snapshotter; type: string
-      namespace: kube-system # @schema description: Namespace for deployment; type: string
-      timeout: 15m # @schema description: Helm chart installation timeout; type: string
-      image: # @schema description: Image configuration for snapshot-controller; type: object
-        repository: "" # @schema description: Image repository for snapshot-controller; type: string
-    kubevirtCSIDriverTenant: # @schema description: KubeVirt CSI driver tenant configuration; type: object
-      enabled: false # @schema description: Enable kubevirt-csi-driver-tenant helm chart in k0s; type: boolean
-      repo: ghcr.io/k0rdent-oot/oot/charts/ # @schema description: Chart repository; type: string
-      name: kubevirt-csi-driver-tenant # @schema description: Chart name; type: string
-      version: "1.5.0" # @schema description: Chart version for kubevirt-csi-driver-tenant; type: string
-      namespace: kube-system # @schema description: Namespace for deployment; type: string
-      timeout: 15m # @schema description: Helm chart installation timeout; type: string
-      images: # @schema description: Image configurations for CSI driver components; type: object
-        csiDriver: # @schema description: CSI driver image configuration; type: object
-          repo: "" # @schema description: Image repository for CSI driver; type: string
-        csiNodeDriverRegistrar: # @schema description: CSI node driver registrar image configuration; type: object
-          repo: "" # @schema description: Image repository for CSI node driver registrar; type: string
-        csiLivenessProbe: # @schema description: CSI liveness probe image configuration; type: object
-          repo: "" # @schema description: Image repository for CSI liveness probe; type: string
-    kubevirtCloudControllerManager: # @schema description: KubeVirt cloud controller manager configuration; type: object
-      enabled: false # @schema description: Enable kubevirt-cloud-controller-manager helm chart in k0s; type: boolean
-      repo: ghcr.io/k0rdent-oot/oot/charts/ # @schema description: Chart repository; type: string
-      name: kubevirt-cloud-controller-manager # @schema description: Chart name; type: string
-      version: "1.5.0" # @schema description: Chart version for kubevirt-cloud-controller-manager; type: string
-      namespace: kube-system # @schema description: Namespace for deployment; type: string
-      timeout: 15m # @schema description: Helm chart installation timeout; type: string
-      tag: "" # @schema description: Image tag for kubevirt-cloud-controller-manager, if empty uses chart default; type: string
-      replicas: 1 # @schema description: Number of replicas for cloud controller manager; type: integer; minimum: 1
-      topologySpreadConstraints: # @schema description: Topology spread constraints for cloud controller manager; type: array
-        - labelSelector:
-            matchLabels:
-              k8s-app: kccm-{{ .Release.Name }}
-          matchLabelKeys:
-            - pod-template-hash
-          topologyKey: topology.kubernetes.io/zone
-          maxSkew: 1
-          whenUnsatisfiable: ScheduleAnyway
+  helmCharts: {} # @schema description: Helm chart deployment configurations; type: object
 
 machineHealthCheck: # @schema description: Machine health check configuration; type: object
   enabled: false # @schema description: Enable machine health checks; type: boolean

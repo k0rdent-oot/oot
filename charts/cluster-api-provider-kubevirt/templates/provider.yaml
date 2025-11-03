@@ -1,13 +1,15 @@
-{{- $version := "v0.1.10" }}
 apiVersion: operator.cluster.x-k8s.io/v1alpha2
 kind: InfrastructureProvider
 metadata:
   name: kubevirt
+  namespace: {{ .Release.Namespace }}
 spec:
-  version: {{ $version }}
-  {{- if .Values.configSecret.name }}
+  version: {{ printf "v%s" .Chart.AppVersion | quote }}
+  {{- if .Values.config.secret.name }}
   configSecret:
-    name: {{ .Values.configSecret.name }}
-    namespace: {{ .Values.configSecret.namespace | default .Release.Namespace | trunc 63 }}
+    name: {{ .Values.config.secret.name }}
+    namespace: {{ .Release.Namespace }}
   {{- end }}
-  manager: {{ include "spec.manager" . | nindent 4 }}
+  {{- if .Values.manager }}
+  manager: {{ toYaml .Values.manager | nindent 4 }}
+  {{- end }}

@@ -110,7 +110,7 @@ spec:
           controlPlaneLoadBalancing:
             {{- toYaml .Values.k0s.network.controlPlaneLoadBalancing | nindent 12 }}
           {{- end }}
-        {{- if or .Values.k0s.extensions.helm.charts.metallb.enabled .Values.k0s.extensions.helm.charts.localPathStorage.enabled .Values.k0s.helmCharts.kubernetesCSIExternalSnapshotter.enabled .Values.k0s.helmCharts.kubevirtCSIDriverTenant.enabled .Values.k0s.helmCharts.kubevirtCloudControllerManager.enabled }}
+        {{- if or .Values.k0s.extensions.helm.charts.metallb.enabled .Values.k0s.extensions.helm.charts.localPathStorage.enabled }}
         extensions:
           helm:
             charts:
@@ -133,57 +133,6 @@ spec:
               values: |
                 storageClass:
                   defaultClass: {{ .Values.k0s.extensions.helm.charts.localPathStorage.values.storageClass.defaultClass | default true }}
-            {{- end }}
-            {{- if .Values.k0s.helmCharts.kubernetesCSIExternalSnapshotter.enabled }}
-            {{- $order = add $order 1 }}
-            - name: kubernetes-csi-external-snapshotter
-              chartname: oci://{{ .Values.k0s.helmCharts.kubernetesCSIExternalSnapshotter.repo }}/{{ .Values.k0s.helmCharts.kubernetesCSIExternalSnapshotter.name }}
-              version: {{ .Values.k0s.helmCharts.kubernetesCSIExternalSnapshotter.version }}
-              namespace: {{ .Values.k0s.helmCharts.kubernetesCSIExternalSnapshotter.namespace | default "kube-system" }}
-              timeout: {{ .Values.k0s.helmCharts.kubernetesCSIExternalSnapshotter.timeout | default "15m" }}
-              order: {{ $order }}
-              {{- if .Values.k0s.helmCharts.kubernetesCSIExternalSnapshotter.image.repository }}
-              values: |
-                image:
-                  repository: {{ .Values.k0s.helmCharts.kubernetesCSIExternalSnapshotter.image.repository }}
-              {{- end }}
-            {{- end }}
-            {{- if .Values.k0s.helmCharts.kubevirtCSIDriverTenant.enabled }}
-            {{- $order = add $order 1 }}
-            - name: kubevirt-csi-driver-tenant
-              chartname: oci://{{ .Values.k0s.helmCharts.kubevirtCSIDriverTenant.repo }}/{{ .Values.k0s.helmCharts.kubevirtCSIDriverTenant.name }}
-              version: {{ .Values.k0s.helmCharts.kubevirtCSIDriverTenant.version }}
-              namespace: {{ .Values.k0s.helmCharts.kubevirtCSIDriverTenant.namespace | default "kube-system" }}
-              timeout: {{ .Values.k0s.helmCharts.kubevirtCSIDriverTenant.timeout | default "15m" }}
-              order: {{ $order }}
-              values: |
-                infraClusterNamespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
-                infraClusterLabels: csi-driver/cluster={{ .Release.Name }}
-                infraStorageClassName: {{ .Values.infraStorageClassName }}
-              {{- if or .Values.k0s.helmCharts.kubevirtCSIDriverTenant.images.csiDriver.repo .Values.k0s.helmCharts.kubevirtCSIDriverTenant.images.csiNodeDriverRegistrar.repo .Values.k0s.helmCharts.kubevirtCSIDriverTenant.images.csiLivenessProbe.repo }}
-                csiDriver:
-                  repo: {{ .Values.k0s.helmCharts.kubevirtCSIDriverTenant.images.csiDriver.repo }}
-                csiNodeDriverRegistrar:
-                  repo: {{ .Values.k0s.helmCharts.kubevirtCSIDriverTenant.images.csiNodeDriverRegistrar.repo }}
-                csiLivenessProbe:
-                  repo: {{ .Values.k0s.helmCharts.kubevirtCSIDriverTenant.images.csiLivenessProbe.repo }}
-              {{- end }}
-            {{- end }}
-            {{- if .Values.k0s.helmCharts.kubevirtCloudControllerManager.enabled }}
-            {{- $order = add $order 1 }}
-            - name: kubevirt-cloud-controller-manager
-              chartname: oci://{{ .Values.k0s.helmCharts.kubevirtCloudControllerManager.repo }}/{{ .Values.k0s.helmCharts.kubevirtCloudControllerManager.name }}
-              version: {{ .Values.k0s.helmCharts.kubevirtCloudControllerManager.version }}
-              namespace: {{ .Values.k0s.helmCharts.kubevirtCloudControllerManager.namespace | default "kube-system" }}
-              timeout: {{ .Values.k0s.helmCharts.kubevirtCloudControllerManager.timeout | default "15m" }}
-              order: {{ $order }}
-              values: |
-                replicas: {{ .Values.k0s.helmCharts.kubevirtCloudControllerManager.replicas }}
-                repo: {{ .Values.k0s.helmCharts.kubevirtCloudControllerManager.repo }}
-                name: {{ .Values.k0s.helmCharts.kubevirtCloudControllerManager.name }}
-                tag: {{ .Values.k0s.helmCharts.kubevirtCloudControllerManager.tag }}
-                topologySpreadConstraints:
-                {{- toYaml .Values.k0s.helmCharts.kubevirtCloudControllerManager.topologySpreadConstraints | nindent 18 }}
             {{- end }}
             repositories:
             - name: {{ .Values.k0s.extensions.helm.repositories.metallb.name | default "metallb" }}

@@ -9,8 +9,8 @@
 ```bash
 # export KUBECONFIG=/var/lib/k0s/pki/admin.conf
 
-helm install kcm oci://ghcr.io/k0rdent/kcm/charts/kcm --version 1.4.0 -n kcm-system --create-namespace \
-  --set controller.enableTelemetry=false \
+helm install kcm oci://ghcr.io/k0rdent/kcm/charts/kcm --version 1.5.0 -n kcm-system --create-namespace \
+  --set regional.telemetry.mode=disabled \
   --set regional.velero.enabled=false
 ```
 
@@ -20,70 +20,70 @@ helm install kcm oci://ghcr.io/k0rdent/kcm/charts/kcm --version 1.4.0 -n kcm-sys
 kubectl wait --for=condition=Ready=True management/kcm --timeout=300s
 ```
 
-## Install `KubeVirt` chart
-
-> Note: can also create manifests directly, see `kubevirt-pp` Helm Chart
+## Install `KubeVirt` provider objects
 
 ```bash
-helm install kubevirt-pp oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt-pp -n kcm-system --take-ownership
+kubectl apply -f - <<EOF
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: oot-repo
+  namespace: kcm-system
+  annotations:
+    helm.sh/resource-policy: keep
+  labels:
+    k0rdent.mirantis.com/managed: "true"
+spec:
+  type: oci
+  url: "oci://ghcr.io/k0rdent-oot/oot/charts"
+  interval: 10m0s
+
+---
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: ProviderTemplate
+metadata:
+  name: cluster-api-provider-kubevirt-1-6-0
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  helm:
+    chartSpec:
+      chart: cluster-api-provider-kubevirt
+      version: 1.6.0
+      interval: 10m0s
+      sourceRef:
+        kind: HelmRepository
+        name: oot-repo
+
+---
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: ClusterTemplate
+metadata:
+  name: kubevirt-standalone-cp-gpu-1-6-0
+  namespace: kcm-system
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  helm:
+    chartSpec:
+      chart: kubevirt-standalone-cp-gpu
+      version: 1.6.0
+      interval: 10m0s
+      sourceRef:
+        kind: HelmRepository
+        name: oot-repo
+EOF
 ```
 
-## Custom KubeVirt Installation with Overrides
-
-If you need to install KubeVirt with custom configuration overrides, you should install `kubevirt-pp` without the bundled KubeVirt and then install the KubeVirt chart separately.
-
-### Install kubevirt-pp without KubeVirt
+## Install KubeVirt chart
 
 ```bash
-helm install kubevirt-pp oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt-pp -n kcm-system --take-ownership \
-  --set kubevirt.enabled=false
-```
-
-### Install KubeVirt chart separately with custom overrides
-
-#### Using command line overrides
-
-```bash
-helm install kubevirt oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt -n kubevirt --take-ownership --create-namespace \
+helm install kubevirt oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt \
+  --namespace kubevirt \
+  --create-namespace \
   --set-string spec.configuration.developerConfiguration.useEmulation=true
 ```
-
-#### Using values file for complex overrides
-
-```bash
-# Create values override file
-cat > kubevirt-values.yaml << EOF
-kubevirt:
-  virtOperator:
-    replicas: 1
-    env:
-      - name: VIRT_OPERATOR_IMAGE
-        value: quay.io/kubevirt/virt-operator:v1.6.0
-      - name: WATCH_NAMESPACE
-        valueFrom:
-          fieldRef:
-            apiVersion: v1
-            fieldPath: metadata.annotations['olm.targetNamespaces']
-      - name: KUBEVIRT_VERSION
-        value: v1.6.0
-      - name: KV_IO_EXTRA_ENV_LAUNCHER_QEMU_TIMEOUT
-        value: "9000"
-      - name: VIRT_CONTROLLER_IMAGE
-        value: ghcr.io/s3rj1k/virt-controller:latest
-      - name: VIRT_LAUNCHER_IMAGE
-        value: ghcr.io/s3rj1k/virt-launcher:latest
-      - name: VIRT_HANDLER_IMAGE
-        value: ghcr.io/s3rj1k/virt-handler:latest
-      - name: KV_IO_EXTRA_ENV_GOTRACEBACK
-        value: all
-EOF
-
-# Install with custom values
-helm install kubevirt oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt -n kubevirt --take-ownership --create-namespace \
-  -f kubevirt-values.yaml
-```
-
-> Note: Replace the values with your specific configuration requirements. Refer to the KubeVirt documentation for available configuration options.
 
 ## Update `Management` object to enable `KubeVirt` provider
 
@@ -96,7 +96,7 @@ kubectl patch mgmt kcm \
       "path": "/spec/providers/-",
       "value": {
         "name": "cluster-api-provider-kubevirt",
-        "template": "cluster-api-provider-kubevirt-1-5-0",
+        "template": "cluster-api-provider-kubevirt-1-6-0",
       }
     }
   ]'
@@ -165,7 +165,7 @@ metadata:
   name: kubevirt-demo
   namespace: kcm-system
 spec:
-  template: kubevirt-standalone-cp-1-5-0
+  template: kubevirt-standalone-cp-gpu-1-6-0
   credential: kubevirt-cluster-identity-cred
   config:
     controlPlaneNumber: 1

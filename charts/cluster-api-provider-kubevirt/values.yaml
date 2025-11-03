@@ -1,6 +1,7 @@
-configSecret:
-  create: false
-  name: ""
-  namespace: ""
+config:
+  secret:
+    create: false
+    name: ""
+    data: {}
 
 manager: {}

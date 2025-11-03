@@ -25,20 +25,20 @@ kubevirt:
       type: RollingUpdate
     image:
       repository: quay.io/kubevirt/virt-operator
-      tag: v1.6.0
+      tag: v1.6.2
       pullPolicy: IfNotPresent
     args:
       port: "8443"
       verbosity: "2"
     env:
       - name: VIRT_OPERATOR_IMAGE
-        value: quay.io/kubevirt/virt-operator:v1.6.0
+        value: quay.io/kubevirt/virt-operator:v1.6.2
       - name: WATCH_NAMESPACE
         valueFrom:
           fieldRef:
             fieldPath: metadata.annotations['olm.targetNamespaces']
       - name: KUBEVIRT_VERSION
-        value: v1.6.0
+        value: v1.6.2
     annotations:
       openshift.io/required-scc: restricted-v2
     resources:
