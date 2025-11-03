@@ -4,6 +4,9 @@ metadata:
   name: cluster-api-provider-k0sproject-k0smotron
   annotations:
     helm.sh/resource-policy: keep
+  labels:
+    helm.toolkit.fluxcd.io/name: cluster-api-provider-k0sproject-k0smotron
+    helm.toolkit.fluxcd.io/namespace: {{ .Release.Namespace }}
 spec:
   clusterGVKs:
     - group: infrastructure.cluster.x-k8s.io

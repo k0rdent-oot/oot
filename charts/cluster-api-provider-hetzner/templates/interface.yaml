@@ -4,6 +4,9 @@ metadata:
   name: cluster-api-provider-hetzner
   annotations:
     helm.sh/resource-policy: keep
+  labels:
+    helm.toolkit.fluxcd.io/name: cluster-api-provider-hetzner
+    helm.toolkit.fluxcd.io/namespace: {{ .Release.Namespace }}
 spec:
   clusterGVKs:
     - group: infrastructure.cluster.x-k8s.io
