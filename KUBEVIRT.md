@@ -2,7 +2,7 @@
 
 ## Install `k0rdent/kcm` into Kubernetes cluster
 
-> Note: for the `KinD` based cluster use [setup script](/scripts/kind.sh), to use image registry proxy `export REGISTRY_PROXY=image.proxy.net`
+> Note: for the `KinD` based cluster use [setup script](/hack/kind/create.sh), to use image registry proxy `export REGISTRY_PROXY=image.proxy.net`
 
 > Note: if using `cilium` [without `kube-proxy`](https://github.com/cilium/cilium/blob/main/Documentation/network/kubernetes/kubeproxy-free.rst), run `cilium config set bpf-lb-sock-hostns-only true`, or use [Helm chart](https://github.com/cilium/cilium/blob/main/Documentation/network/kubernetes/kubeproxy-free.rst#socket-loadbalancer-bypass-in-pod-namespace) option
 
