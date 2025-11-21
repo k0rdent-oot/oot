@@ -4,17 +4,18 @@ on:
   workflow_dispatch:
     inputs:
       repository:
-        description: 'Source repository to clone and build from'
+        description: "Source repository to clone and build from"
         required: true
-        default: 'k0sproject/k0s'
+        default: "k0sproject/k0s"
         type: choice
         options:
-          - 'k0sproject/k0s'
-          - 'k0rdent-oot/k0s'
+          - "k0sproject/k0s"
+          - "k0rdent-oot/k0s"
+          - "s3rj1k/k0s"
       ref:
-        description: 'Git ref to build from (branch, tag, or commit SHA)'
+        description: "Git ref to build from (branch, tag, or commit SHA)"
         required: false
-        default: 'main'
+        default: "main"
         type: string
 
 permissions:
@@ -54,7 +55,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ inputs.repository }}
           ref: ${{ inputs.ref || github.ref }}
@@ -81,7 +82,7 @@ jobs:
           cd binaries && sha256sum k0s-${{ matrix.target_os }}-${{ matrix.arch }}${{ steps.build-prepare.outputs.executable-suffix }} > k0s-${{ matrix.target_os }}-${{ matrix.arch }}${{ steps.build-prepare.outputs.executable-suffix }}.sha256
 
       - name: Upload binary artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: k0s-${{ matrix.target_os }}-${{ matrix.arch }}
           path: binaries/
@@ -101,7 +102,7 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           path: artifacts
 
@@ -156,9 +157,9 @@ jobs:
           EOF
 
       - name: Upload pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
-          path: 'deploy'
+          path: "deploy"
 
       - name: Deploy to GitHub Pages
         id: deployment
