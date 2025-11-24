@@ -5,6 +5,8 @@ metadata:
   namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
 spec:
   controlPlaneServiceTemplate:
+    metadata:
+      namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
     spec:
       type: LoadBalancer
 {{- if .Values.cluster.kubeConfigSecretRef }}
