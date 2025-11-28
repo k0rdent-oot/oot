@@ -63,19 +63,25 @@ spec:
                   {{- end }}
                   interfaces:
                   - name: default
-                    {{- if eq .Values.worker.defaultNetworkInterface.type "bridge" }}
+                  {{- if eq .Values.worker.defaultNetworkInterface.type "bridge" }}
+                  - name: default
                     bridge: {}
-                    {{- else if eq .Values.worker.defaultNetworkInterface.type "masquerade" }}
+                  {{- else if eq .Values.worker.defaultNetworkInterface.type "masquerade" }}
+                  - name: default
                     masquerade: {}
                     {{- if .Values.worker.defaultNetworkInterface.ports }}
                     ports:
                       {{- toYaml .Values.worker.defaultNetworkInterface.ports | nindent 22 }}
                     {{- end }}
-                    {{- else if eq .Values.worker.defaultNetworkInterface.type "sriov" }}
+                  {{- else if eq .Values.worker.defaultNetworkInterface.type "sriov" }}
+                  {{- range .Values.worker.defaultNetworkInterface.sriov }}
+                  - name: {{ .name }}
                     sriov: {}
-                    {{- else }}
+                  {{- end }}
+                  {{- else }}
+                  - name: default
                     bridge: {}
-                    {{- end }}
+                  {{- end }}
                   {{- range .Values.worker.additionalNetworkInterfaces }}
                   - name: {{ .name }}
                     bridge: {}
@@ -125,11 +131,16 @@ spec:
                 memory:
                   guest: {{ .Values.worker.memory }}
                 {{- end }}
-                {{- if or .Values.worker.memoryConfig.requests .Values.worker.memoryConfig.limits }}
+                {{- if or .Values.worker.memoryConfig.requests .Values.worker.memoryConfig.limits .Values.worker.defaultNetworkInterface.sriov }}
                 resources:
-                  {{- if .Values.worker.memoryConfig.requests }}
+                  {{- if or .Values.worker.memoryConfig.requests .Values.worker.defaultNetworkInterface.sriov }}
                   requests:
+                    {{- if .Values.worker.memoryConfig.requests }}
                     memory: {{ .Values.worker.memoryConfig.requests }}
+                    {{- end }}
+                    {{- range .Values.worker.defaultNetworkInterface.sriov }}
+                    {{ .resourceName }}: 1
+                    {{- end }}
                   {{- end }}
                   {{- if .Values.worker.memoryConfig.limits }}
                   limits:
@@ -138,8 +149,16 @@ spec:
                 {{- end }}
               evictionStrategy: External
               networks:
+              {{- if eq .Values.worker.defaultNetworkInterface.type "sriov" }}
+              {{- range .Values.worker.defaultNetworkInterface.sriov }}
+                - name: {{ .name }}
+                  multus:
+                    networkName: {{ .namespacedAddress }}
+              {{- end }}
+              {{- else }}
                 - name: default
                   pod: {}
+              {{- end }}
               {{- with .Values.worker.additionalNetworkInterfaces }}
                 {{- toYaml . | nindent 16 }}
               {{- end }}
