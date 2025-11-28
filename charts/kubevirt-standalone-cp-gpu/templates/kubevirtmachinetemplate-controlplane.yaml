@@ -62,20 +62,25 @@ spec:
                   autoattachGraphicsDevice: {{ .Values.controlPlane.devices.autoattachGraphicsDevice }}
                   {{- end }}
                   interfaces:
+                  {{- if eq .Values.controlPlane.defaultNetworkInterface.type "bridge" }}
                   - name: default
-                    {{- if eq .Values.controlPlane.defaultNetworkInterface.type "bridge" }}
                     bridge: {}
-                    {{- else if eq .Values.controlPlane.defaultNetworkInterface.type "masquerade" }}
+                  {{- else if eq .Values.controlPlane.defaultNetworkInterface.type "masquerade" }}
+                  - name: default
                     masquerade: {}
                     {{- if .Values.controlPlane.defaultNetworkInterface.ports }}
                     ports:
                       {{- toYaml .Values.controlPlane.defaultNetworkInterface.ports | nindent 22 }}
                     {{- end }}
-                    {{- else if eq .Values.controlPlane.defaultNetworkInterface.type "sriov" }}
+                  {{- else if eq .Values.controlPlane.defaultNetworkInterface.type "sriov" }}
+                  {{- range .Values.controlPlane.defaultNetworkInterface.sriov }}
+                  - name: {{ .name }}
                     sriov: {}
-                    {{- else }}
+                  {{- end }}
+                  {{- else }}
+                  - name: default
                     bridge: {}
-                    {{- end }}
+                  {{- end }}
                   {{- range .Values.controlPlane.additionalNetworkInterfaces }}
                   - name: {{ .name }}
                     bridge: {}
@@ -125,11 +130,16 @@ spec:
                 memory:
                   guest: {{ .Values.controlPlane.memory }}
                 {{- end }}
-                {{- if or .Values.controlPlane.memoryConfig.requests .Values.controlPlane.memoryConfig.limits }}
+                {{- if or .Values.controlPlane.memoryConfig.requests .Values.controlPlane.memoryConfig.limits .Values.controlPlane.defaultNetworkInterface.sriov}}
                 resources:
-                  {{- if .Values.controlPlane.memoryConfig.requests }}
+                  {{- if or .Values.controlPlane.memoryConfig.requests .Values.controlPlane.defaultNetworkInterface.sriov }}
                   requests:
+                    {{- if .Values.controlPlane.memoryConfig.requests }}
                     memory: {{ .Values.controlPlane.memoryConfig.requests }}
+                    {{- end }}
+                    {{- range .Values.controlPlane.defaultNetworkInterface.sriov }}
+                    {{ .resourceName }}: 1
+                    {{- end }}
                   {{- end }}
                   {{- if .Values.controlPlane.memoryConfig.limits }}
                   limits:
@@ -138,8 +148,16 @@ spec:
                 {{- end }}
               evictionStrategy: External
               networks:
+              {{- if eq .Values.controlPlane.defaultNetworkInterface.type "sriov" }}
+              {{- range .Values.controlPlane.defaultNetworkInterface.sriov }}
+                - name: {{ .name }}
+                  multus:
+                    networkName: {{ .namespacedAddress }}
+              {{- end }}
+              {{- else }}
                 - name: default
                   pod: {}
+              {{- end }}
               {{- with .Values.controlPlane.additionalNetworkInterfaces }}
                 {{- toYaml . | nindent 16 }}
               {{- end }}

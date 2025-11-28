@@ -169,22 +169,49 @@
                 },
                 "defaultNetworkInterface": {
                     "description": "Default network interface configuration",
-                    "type": [
-                        "object"
-                    ],
+                    "type": ["object"],
                     "properties": {
                         "type": {
                             "description": "Interface type (bridge, masquerade, sriov)",
-                            "type": [
-                                "string"
-                            ],
-                            "enum": [
-                                "bridge",
-                                "masquerade",
-                                "sriov"
-                            ]
+                            "type": ["string"],
+                            "enum": ["bridge", "masquerade", "sriov"]
+                        },
+                        "sriov": {
+                            "description": "SR-IOV Multus network definitions",
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "required": ["name", "namespacedAddress", "resourceName"],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Interface/network name"
+                                    },
+                                    "namespacedAddress": {
+                                        "type": "string",
+                                        "description": "Multus network name (namespace/name)"
+                                    },
+                                    "resourceName": {
+                                        "type": "string",
+                                        "description": "SR-IOV resource name exposed on nodes"
+                                    }
+                                }
+                            }
                         }
-                    }
+                    },
+                    "required": ["type"],
+                    "allOf": [
+                        {
+                            "if": {
+                                "properties": {
+                                    "type": { "const": "sriov" }
+                                }
+                            },
+                            "then": {
+                                "required": ["sriov"]
+                            }
+                        }
+                    ]
                 },
                 "devices": {
                     "description": "Device configuration",
@@ -969,22 +996,49 @@
                 },
                 "defaultNetworkInterface": {
                     "description": "Default network interface configuration",
-                    "type": [
-                        "object"
-                    ],
+                    "type": ["object"],
                     "properties": {
                         "type": {
                             "description": "Interface type (bridge, masquerade, sriov)",
-                            "type": [
-                                "string"
-                            ],
-                            "enum": [
-                                "bridge",
-                                "masquerade",
-                                "sriov"
-                            ]
+                            "type": ["string"],
+                            "enum": ["bridge", "masquerade", "sriov"]
+                        },
+                        "sriov": {
+                            "description": "SR-IOV Multus network definitions",
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "required": ["name", "namespacedAddress", "resourceName"],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Interface/network name"
+                                    },
+                                    "namespacedAddress": {
+                                        "type": "string",
+                                        "description": "Multus network name (namespace/name)"
+                                    },
+                                    "resourceName": {
+                                        "type": "string",
+                                        "description": "SR-IOV resource name exposed on nodes"
+                                    }
+                                }
+                            }
                         }
-                    }
+                    },
+                    "required": ["type"],
+                    "allOf": [
+                        {
+                            "if": {
+                                "properties": {
+                                    "type": { "const": "sriov" }
+                                }
+                            },
+                            "then": {
+                                "required": ["sriov"]
+                            }
+                        }
+                    ]
                 },
                 "devices": {
                     "description": "Device configuration",
