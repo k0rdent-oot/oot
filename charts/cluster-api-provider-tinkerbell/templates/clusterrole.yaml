@@ -1,0 +1,16 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kcm-manager-role-tinkerbellclusters
+rules:
+  - apiGroups:
+      - infrastructure.cluster.x-k8s.io
+    resources:
+      - tinkerbellclusters
+      - tinkerbellmachines
+      - tinkerbellmachinetemplates
+    verbs:
+      - get
+      - list
+      - patch
+      - watch

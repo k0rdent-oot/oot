@@ -1,0 +1,60 @@
+# Cluster parameters
+controlPlaneNumber: 1 # @schema description: The number of control plane nodes; type: integer; minimum: 1; maximum: 5
+workersNumber: 1 # @schema description: The number of worker nodes; type: integer; minimum: 0
+
+clusterIdentity: # @schema description: Cluster identity reference, auto-populated; type: object
+  name: "" # @schema description: Cluster identity secret name, auto-populated; type: string
+
+# Cluster network configuration
+clusterNetwork: # @schema description: Cluster network configuration; type: object
+  pods: # @schema description: Pod network configuration; type: object
+    cidrBlocks: # @schema description: Pod CIDR blocks; type: array
+      - 10.244.0.0/16
+  services: # @schema description: Service network configuration; type: object
+    cidrBlocks: # @schema description: Service CIDR blocks; type: array
+      - 10.96.0.0/12
+
+# Control plane endpoint
+controlPlaneEndpoint: # @schema description: Control plane endpoint configuration; type: object
+  host: "" # @schema description: Control plane VIP address; type: string
+  port: 6443 # @schema description: Control plane API port; type: integer
+
+# Control plane machine configuration
+controlPlane: # @schema description: Control plane machine configuration; type: object
+  bootMode: netboot # @schema description: Boot mode; type: string; enum: [netboot, isoboot]
+  isoURL: "" # @schema description: ISO URL for isoboot mode; type: string
+  hardwareAffinity: # @schema description: Hardware affinity for control plane; type: object
+    matchLabels: # @schema description: Labels to match; type: object
+      tinkerbell.org/role: control-plane
+  templateOverride: "" # @schema description: Tinkerbell workflow template override; type: string
+
+# Worker machine configuration
+worker: # @schema description: Worker machine configuration; type: object
+  bootMode: netboot # @schema description: Boot mode; type: string; enum: [netboot, isoboot]
+  isoURL: "" # @schema description: ISO URL for isoboot mode; type: string
+  hardwareAffinity: # @schema description: Hardware affinity for workers; type: object
+    matchLabels: # @schema description: Labels to match; type: object
+      tinkerbell.org/role: worker
+  templateOverride: "" # @schema description: Tinkerbell workflow template override; type: string
+  args: # @schema description: Arguments to pass to k0s worker; type: array
+    - --enable-cloud-provider
+
+# K0s parameters
+k0s: # @schema description: K0s parameters; type: object
+  version: v1.33.4+k0s.0 # @schema description: K0s version; type: string
+  args: # @schema description: Arguments to pass to k0s controller; type: array
+    - --enable-worker
+    - --no-taints
+    - --enable-dynamic-config
+    - --disable-components=konnectivity-server
+  api: # @schema description: Kubernetes API server parameters; type: object
+    extraArgs: # @schema description: Extra arguments for API server; type: object
+      anonymous-auth: "true"
+      kubelet-preferred-address-types: "ExternalIP,InternalIP,Hostname"
+  network: # @schema description: Network configuration for K0s; type: object
+    provider: calico # @schema description: Network provider; type: string; enum: [calico, kuberouter, custom]
+    calico: # @schema description: Calico configuration; type: object
+      mode: vxlan # @schema description: Calico backend mode; type: string; enum: [vxlan, ipip, bird]
+      ipAutodetectionMethod: first-found # @schema description: Method for detecting node IP; type: string
+  telemetry: # @schema description: Telemetry configuration; type: object
+    enabled: false # @schema description: Enable telemetry; type: boolean

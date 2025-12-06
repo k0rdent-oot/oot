@@ -1,0 +1,14 @@
+secret: # @schema description: Secret configuration; type: object
+  create: false # @schema description: Whether to create a new secret; type: boolean
+  name: "" # @schema description: Name for objects to use; type: string
+  data: {} # @schema description: Secret data; type: object; additionalProperties: true
+
+manager: {}
+
+# Tinkerbell subchart configuration
+# See https://github.com/tinkerbell/tinkerbell/tree/main/helm/tinkerbell for available options
+tinkerbell: # @schema description: Tinkerbell subchart configuration; type: object
+  enabled: false # @schema description: Enable Tinkerbell stack deployment; type: boolean
+  publicIP: "" # @schema description: LoadBalancer IP for Tinkerbell services; type: string
+  artifactsFileServer: "" # @schema description: URL for HookOS artifacts server; type: string
+  trustedProxies: [] # @schema description: List of trusted proxy CIDRs; type: array

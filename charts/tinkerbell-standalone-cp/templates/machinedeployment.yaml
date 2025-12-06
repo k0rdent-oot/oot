@@ -1,0 +1,34 @@
+{{- if gt (int .Values.workersNumber) 0 }}
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: {{ .Release.Name }}-worker
+  namespace: {{ .Release.Namespace }}
+  labels:
+    cluster.x-k8s.io/cluster-name: {{ .Release.Name }}
+    pool: worker
+spec:
+  clusterName: {{ .Release.Name }}
+  replicas: {{ .Values.workersNumber }}
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: {{ .Release.Name }}
+      pool: worker
+  template:
+    metadata:
+      labels:
+        cluster.x-k8s.io/cluster-name: {{ .Release.Name }}
+        pool: worker
+    spec:
+      clusterName: {{ .Release.Name }}
+      version: {{ .Values.k0s.version | replace "+k0s.0" "" | replace "+k0s.1" "" }}
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: K0sWorkerConfigTemplate
+          name: {{ .Release.Name }}-worker
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: TinkerbellMachineTemplate
+        name: {{ .Release.Name }}-worker
+{{- end }}

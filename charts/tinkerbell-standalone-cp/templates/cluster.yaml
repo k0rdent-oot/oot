@@ -1,0 +1,24 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+        {{- toYaml .Values.clusterNetwork.pods.cidrBlocks | nindent 8 }}
+    services:
+      cidrBlocks:
+        {{- toYaml .Values.clusterNetwork.services.cidrBlocks | nindent 8 }}
+  controlPlaneEndpoint:
+    host: {{ .Values.controlPlaneEndpoint.host | quote }}
+    port: {{ .Values.controlPlaneEndpoint.port }}
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: K0sControlPlane
+    name: {{ .Release.Name }}-cp
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: TinkerbellCluster
+    name: {{ .Release.Name }}

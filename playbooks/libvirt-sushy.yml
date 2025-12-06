@@ -1,0 +1,610 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2025 s3rj1k
+---
+- name: Libvirt with Sushy Tools (Redfish Emulator)
+  hosts: localhost
+  connection: local
+  become: true
+  gather_facts: true
+  ignore_errors: false
+
+  pre_tasks:
+    - name: Check if system is supported
+      block:
+        - name: Check if distribution is Debian or Ubuntu
+          fail:
+            msg: "This playbook only supports Debian or Ubuntu distributions"
+          when: ansible_distribution not in ["Debian", "Ubuntu"]
+
+        - name: Check if architecture is AMD64
+          fail:
+            msg: "This playbook only supports AMD64 architecture"
+          when: ansible_architecture != "x86_64"
+
+        - name: Get OS version
+          debug:
+            msg: "Running on {{ ansible_distribution }} {{ ansible_distribution_version }} ({{ ansible_architecture }})"
+
+    - name: Wait for system to be ready
+      wait_for:
+        path: /var/lib/cloud/instance/boot-finished
+        timeout: 600
+      when: ansible_service_mgr is defined and lookup('env', 'CLOUD_INIT') != ''
+
+  handlers:
+    - name: Restart libvirtd
+      systemd:
+        name: libvirtd
+        state: restarted
+        daemon_reload: yes
+      when: ansible_service_mgr == 'systemd'
+
+    - name: Restart sushy-emulator
+      systemd:
+        name: sushy-emulator
+        state: restarted
+        daemon_reload: yes
+      when: ansible_service_mgr == 'systemd'
+
+    - name: Restart libvirt-reboot-monitor
+      systemd:
+        name: libvirt-reboot-monitor
+        state: restarted
+        daemon_reload: yes
+      when: ansible_service_mgr == 'systemd'
+
+  tasks:
+    - name: Update system packages
+      apt:
+        update_cache: yes
+        upgrade: yes
+      register: system_upgraded
+
+    - name: Install required packages
+      apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+          - libguestfs-tools
+          - libosinfo-bin
+          - libvirt-clients
+          - libvirt-daemon-system
+          - ovmf
+          - qemu-kvm
+          - virtinst
+          - build-essential
+          - gcc
+          - libvirt-dev
+          - pkg-config
+          - python3-dev
+          - python3-libvirt
+          - python3-lxml
+          - python3-pip
+          - python3-venv
+          - apache2-utils
+          - openssl
+          - jq
+        state: present
+        update_cache: yes
+      when: system_upgraded is success
+
+    - name: Configure kernel modules
+      block:
+        - name: Ensure required kernel modules are loaded
+          modprobe:
+            name: "{{ item }}"
+            state: present
+          loop:
+            - overlay
+            - br_netfilter
+            - kvm
+            - kvm_intel
+            - kvm_amd
+          ignore_errors: true
+
+        - name: Persist required kernel modules
+          copy:
+            dest: /etc/modules-load.d/99-local.conf
+            content: |
+              overlay
+              br_netfilter
+              kvm
+              kvm_intel
+              kvm_amd
+            mode: "0644"
+
+        - name: Configure kernel parameters for virtualization
+          copy:
+            dest: /etc/sysctl.d/99-libvirt.conf
+            content: |
+              net.ipv4.ip_forward = 1
+              net.ipv6.conf.all.forwarding = 1
+              net.bridge.bridge-nf-call-iptables = 0
+              net.bridge.bridge-nf-call-ip6tables = 0
+            mode: "0644"
+
+        - name: Apply kernel parameters
+          command: sysctl --system
+          changed_when: false
+
+    - name: Configure libvirt
+      block:
+        - name: Enable libvirtd service
+          service:
+            name: libvirtd
+            enabled: yes
+            state: started
+
+        - name: Configure libvirt QEMU
+          copy:
+            dest: /etc/libvirt/qemu.conf
+            content: |
+              security_driver = "none"
+              user = "root"
+              group = "root"
+              dynamic_ownership = 0
+              # https://github.com/stefanberger/swtpm/issues/572#issuecomment-1642014467
+              swtpm_user="swtpm"
+              swtpm_group="swtpm"
+          when: ansible_distribution == "Ubuntu"
+
+        - name: Configure libvirt QEMU
+          copy:
+            dest: /etc/libvirt/qemu.conf
+            content: |
+              security_driver = "none"
+              user = "root"
+              group = "root"
+              dynamic_ownership = 0
+          when: ansible_distribution == "Debian"
+      notify: Restart libvirtd
+
+    # Workaround for sushy-tools ignoring BootSourceOverrideEnabled with libvirt driver.
+    # Sushy-tools always sets boot device as "continuous" (persistent), ignoring one-time boot requests.
+    # See: https://github.com/openstack/sushy-tools/blob/2.1.0/sushy_tools/emulator/main.py#L538-L540
+    - name: Configure libvirt hook to reset boot order on VM stop
+      block:
+        - name: Ensure libvirt hooks directory exists
+          file:
+            path: /etc/libvirt/hooks
+            state: directory
+            mode: "0755"
+
+        - name: Create boot reset script
+          copy:
+            dest: /usr/local/bin/reset-boot-to-disk.sh
+            mode: "0755"
+            content: |
+              #!/bin/bash
+              # Reset boot order to disk first for a libvirt domain
+              # This is a workaround for sushy-tools ignoring BootSourceOverrideEnabled
+              set -euo pipefail
+
+              DOMAIN="$1"
+              TMPFILE=$(mktemp)
+              trap "rm -f $TMPFILE" EXIT
+
+              virsh dumpxml --inactive "$DOMAIN" > "$TMPFILE" 2>/dev/null || exit 0
+
+              python3 << PYEOF
+              import xml.etree.ElementTree as ET
+              import sys
+
+              try:
+                  tree = ET.parse("$TMPFILE")
+                  root = tree.getroot()
+
+                  devices = root.find("devices")
+                  if devices is None:
+                      sys.exit(0)
+
+                  # Remove all existing boot elements from devices
+                  for disk in devices.findall("disk"):
+                      for boot in disk.findall("boot"):
+                          disk.remove(boot)
+
+                  for iface in devices.findall("interface"):
+                      for boot in iface.findall("boot"):
+                          iface.remove(boot)
+
+                  # Set disk as boot order 1
+                  boot_order = 1
+                  for disk in devices.findall("disk"):
+                      if disk.get("device") == "disk":
+                          boot_elem = ET.SubElement(disk, "boot")
+                          boot_elem.set("order", str(boot_order))
+                          boot_order += 1
+                          break
+
+                  # Set network interface as boot order 2
+                  for iface in devices.findall("interface"):
+                      boot_elem = ET.SubElement(iface, "boot")
+                      boot_elem.set("order", str(boot_order))
+                      break
+
+                  tree.write("$TMPFILE")
+              except Exception as e:
+                  sys.exit(1)
+              PYEOF
+
+              virsh define "$TMPFILE" &>/dev/null || true
+
+        - name: Create libvirt QEMU hook
+          copy:
+            dest: /etc/libvirt/hooks/qemu
+            mode: "0755"
+            content: |
+              #!/bin/bash
+              # Libvirt QEMU hook - resets boot order to disk on VM stop
+              # Uses systemd-run to avoid blocking libvirt (hooks must not call back into libvirt synchronously)
+              # See: https://libvirt.org/hooks.html
+
+              DOMAIN="$1"
+              OPERATION="$2"
+
+              if [[ "$OPERATION" == "stopped" ]]; then
+                  systemd-run --no-block --unit="libvirt-boot-reset-${DOMAIN}-$(date +%s)" \
+                      /usr/local/bin/reset-boot-to-disk.sh "$DOMAIN" &>/dev/null || true
+              fi
+
+              exit 0
+      notify: Restart libvirtd
+
+    - name: Create libvirt network hook for iptables
+      copy:
+        dest: /etc/libvirt/hooks/network
+        mode: "0755"
+        content: |
+          #!/bin/bash
+          # Libvirt network hook for tinkerbell network
+          # - Preserves source IP for pod traffic (needed for Tootles/Hegel metadata service)
+          # - Configures bridge for iPXE compatibility
+
+          NETWORK="$1"
+          OPERATION="$2"
+
+          # Only handle tinkerbell network
+          [[ "$NETWORK" != "tinkerbell" ]] && exit 0
+
+          POD_CIDR="10.244.0.0/16"
+          VM_CIDR="172.17.1.0/24"
+          BRIDGE="virbr-tink"
+
+          case "$OPERATION" in
+            started)
+              # NOTE: iptables NAT bypass is not needed when tinkerbell uses hostNetwork: true
+              # Kept for reference if hostNetwork needs to be disabled for some reason
+              # ---
+              # Run iptables rule addition in background AFTER libvirt finishes adding its rules
+              # Libvirt adds its default rules (multicast, broadcast, MASQUERADE) after the hook returns
+              # (
+              #   sleep 5
+              #   # Delete existing rule first (if any) to avoid duplicates
+              #   iptables -t nat -D LIBVIRT_PRT -s "$VM_CIDR" -d "$POD_CIDR" -p tcp --dport 7172 -j RETURN 2>/dev/null || true
+              #   # Insert at position 1 (before MASQUERADE rules)
+              #   iptables -t nat -I LIBVIRT_PRT 1 -s "$VM_CIDR" -d "$POD_CIDR" -p tcp --dport 7172 -j RETURN
+              # ) &
+              # ---
+              # Configure bridge for iPXE compatibility
+              # See: https://github.com/ipxe/ipxe/pull/863
+              ethtool -K "$BRIDGE" tx off sg off tso off 2>/dev/null || true
+              ;;
+            # stopped)
+            #   # Remove the rule when network stops
+            #   iptables -t nat -D LIBVIRT_PRT -s "$VM_CIDR" -d "$POD_CIDR" -p tcp --dport 7172 -j RETURN 2>/dev/null || true
+            #   ;;
+          esac
+
+          exit 0
+      notify: Restart libvirtd
+
+    # Monitor domain reboot events to reset boot order (hooks don't catch guest-initiated reboots)
+    - name: Configure libvirt reboot event monitor
+      block:
+        - name: Create reboot event monitor script
+          copy:
+            dest: /usr/local/bin/libvirt-reboot-monitor.sh
+            mode: "0755"
+            content: |
+              #!/usr/bin/env bash
+              # Monitor libvirt domain reboot events and reset boot order to disk
+              # This catches guest-initiated reboots that the qemu hook doesn't see
+              # Output format: "2025-12-05 20:37:08.789+0000: event 'reboot' for domain 'vm-name'"
+
+              set -eu
+
+              echo "Starting libvirt reboot monitor..."
+
+              virsh event --event reboot --loop --timestamp 2>/dev/null | while read -r line; do
+                  # Extract domain name using sed
+                  domain=$(echo "$line" | sed -n "s/.*for domain '\([^']*\)'.*/\1/p")
+                  if [ -n "$domain" ]; then
+                      echo "$(date): Reboot event for domain: $domain - forcing cold reboot for boot order reset"
+                      # Run in background: wait for guest reboot, then destroy+start
+                      # The qemu hook will reset boot order on "stopped" event
+                      (
+                          sleep 5  # Wait for guest to complete reboot initiation
+                          virsh destroy "$domain" &>/dev/null || true
+                          sleep 5  # Wait for qemu hook to reset boot order
+                          virsh start "$domain" &>/dev/null || true
+                          echo "$(date): Domain $domain cold rebooted with disk-first boot order"
+                      ) &
+                  fi
+              done
+          notify: Restart libvirt-reboot-monitor
+
+        - name: Create systemd service for reboot event monitor
+          copy:
+            dest: /etc/systemd/system/libvirt-reboot-monitor.service
+            mode: "0644"
+            content: |
+              [Unit]
+              Description=Libvirt Domain Reboot Event Monitor
+              Documentation=https://libvirt.org/html/libvirt-libvirt-domain.html
+              After=libvirtd.service
+
+              [Service]
+              Type=simple
+              ExecStart=/usr/local/bin/libvirt-reboot-monitor.sh
+              Restart=always
+              RestartSec=5
+
+              [Install]
+              WantedBy=multi-user.target
+          notify: Restart libvirt-reboot-monitor
+
+        - name: Reload systemd daemon for reboot monitor
+          systemd:
+            daemon_reload: yes
+
+        - name: Enable and start reboot event monitor service
+          systemd:
+            name: libvirt-reboot-monitor
+            enabled: yes
+            state: started
+
+    - name: Flush handlers to restart libvirtd before sushy-tools
+      meta: flush_handlers
+
+    - name: Verify libvirtd is running
+      service:
+        name: libvirtd
+        state: started
+        enabled: yes
+
+    - name: Configure Tinkerbell libvirt network
+      block:
+        - name: Define tinkerbell network
+          community.libvirt.virt_net:
+            command: define
+            name: tinkerbell
+            xml: |
+              <network>
+                <name>tinkerbell</name>
+                <forward mode='nat'/>
+                <bridge name='virbr-tink' stp='on' delay='0'/>
+                <ip address='172.17.1.1' netmask='255.255.255.0'>
+                </ip>
+              </network>
+
+        - name: Start tinkerbell network
+          community.libvirt.virt_net:
+            command: start
+            name: tinkerbell
+          ignore_errors: true
+
+        - name: Set tinkerbell network to autostart
+          community.libvirt.virt_net:
+            autostart: yes
+            name: tinkerbell
+
+    - name: Install and configure Sushy Tools Redfish Emulator
+      block:
+        - name: Check if Redfish password file exists
+          stat:
+            path: /root/.redfish_password
+          register: redfish_password_file
+
+        - name: Read existing Redfish password
+          slurp:
+            src: /root/.redfish_password
+          register: existing_redfish_password
+          when: redfish_password_file.stat.exists
+
+        - name: Use existing Redfish password
+          set_fact:
+            redfish_password: "{{ existing_redfish_password.content | b64decode | trim }}"
+          when: redfish_password_file.stat.exists
+
+        - name: Generate new random password for Redfish authentication
+          set_fact:
+            redfish_password: "{{ lookup('ansible.builtin.password', '/dev/null', chars=['ascii_letters', 'digits'], length=16) }}"
+          when: not redfish_password_file.stat.exists
+
+        - name: Create Sushy Tools directory structure
+          file:
+            path: "{{ item }}"
+            state: directory
+            mode: "0755"
+          loop:
+            - /opt/sushy-tools
+            - /etc/sushy
+            - /etc/sushy/ssl
+
+        - name: Create Python virtual environment for Sushy Tools
+          command:
+            cmd: python3 -m venv /opt/sushy-tools/venv
+            creates: /opt/sushy-tools/venv/bin/python
+
+        - name: Install Sushy Tools and dependencies in virtual environment
+          pip:
+            name:
+              - sushy-tools==2.1.0
+              - libvirt-python
+            virtualenv: /opt/sushy-tools/venv
+            virtualenv_command: python3 -m venv
+
+        - name: Generate self-signed SSL certificate for Sushy Tools
+          block:
+            - name: Generate private key
+              command:
+                cmd: openssl genrsa -out /etc/sushy/sushy.key 2048
+                creates: /etc/sushy/sushy.key
+
+            - name: Generate self-signed certificate
+              command:
+                cmd: >
+                  openssl req -new -x509 -key /etc/sushy/sushy.key
+                  -out /etc/sushy/sushy.cert -days 365
+                  -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
+                creates: /etc/sushy/sushy.cert
+
+            - name: Set proper permissions on SSL files
+              file:
+                path: "{{ item }}"
+                owner: root
+                group: root
+                mode: "0600"
+              loop:
+                - /etc/sushy/sushy.key
+                - /etc/sushy/sushy.cert
+
+        - name: Create htpasswd file for Redfish authentication
+          command:
+            cmd: htpasswd -cbB /etc/sushy/htpasswd admin {{ redfish_password }}
+          changed_when: true
+          notify: Restart sushy-emulator
+
+        - name: Set proper permissions on auth file
+          file:
+            path: /etc/sushy/htpasswd
+            owner: root
+            group: root
+            mode: "0600"
+
+        - name: Save Redfish credentials to file
+          copy:
+            content: "{{ redfish_password }}"
+            dest: /root/.redfish_password
+            mode: "0600"
+            owner: root
+            group: root
+
+        - name: Create Sushy Tools configuration file
+          copy:
+            dest: /etc/sushy/sushy-emulator.conf
+            content: |
+              SUSHY_EMULATOR_LISTEN_IP = u'0.0.0.0'
+              SUSHY_EMULATOR_LISTEN_PORT = 8000
+              SUSHY_EMULATOR_OS_CLOUD = None
+              SUSHY_EMULATOR_LIBVIRT_URI = u'qemu:///system'
+              SUSHY_EMULATOR_IGNORE_BOOT_DEVICE = False
+              SUSHY_EMULATOR_FEATURE_SET = u'full'
+              SUSHY_EMULATOR_AUTH_FILE = u'/etc/sushy/htpasswd'
+              SUSHY_EMULATOR_SSL_CERT = u'/etc/sushy/sushy.cert'
+              SUSHY_EMULATOR_SSL_KEY = u'/etc/sushy/sushy.key'
+              SUSHY_EMULATOR_BOOT_LOADER_MAP = {
+                  u'UEFI': {
+                      u'x86_64': u'/usr/share/OVMF/OVMF_CODE.fd'
+                  },
+                  u'Legacy': {
+                      u'x86_64': None
+                  }
+              }
+              SUSHY_EMULATOR_VMEDIA_DEVICES = {
+                  u'Cd': {
+                      u'Name': 'Virtual CD',
+                      u'MediaTypes': [
+                          u'CD',
+                          u'DVD'
+                      ]
+                  }
+              }
+              SUSHY_EMULATOR_VMEDIA_VERIFY_SSL = False
+            mode: "0644"
+
+        - name: Create Sushy Tools startup script
+          copy:
+            dest: /opt/sushy-tools/sushy-emulator.sh
+            content: |
+              #!/bin/bash
+
+              set -eux -o pipefail
+
+              CONFIG="${SUSHY_TOOLS_CONFIG:-/etc/sushy/sushy-emulator.conf}"
+              ARGS=""
+
+              if [[ -f "${CONFIG}" ]]; then
+                  ARGS="${ARGS} --config ${CONFIG}"
+              fi
+
+              if [[ ! -f "${CONFIG}" ]] || ! grep -q "^SUSHY_EMULATOR_LISTEN_IP =" "${CONFIG}"; then
+                  # Listen on all interfaces unless explicitly configured otherwise.
+                  ARGS="${ARGS} --interface ::"
+              fi
+
+              # Activate virtual environment and start emulator
+              source /opt/sushy-tools/venv/bin/activate
+
+              # Execute sushy-emulator with debug enabled
+              exec /opt/sushy-tools/venv/bin/sushy-emulator --debug $ARGS
+            mode: "0755"
+
+        - name: Create systemd service for Sushy Tools
+          copy:
+            dest: /etc/systemd/system/sushy-emulator.service
+            content: |
+              [Unit]
+              Description=Sushy Tools Redfish Emulator
+              Documentation=https://docs.openstack.org/sushy-tools/
+              After=network.target
+
+              [Service]
+              Type=simple
+              User=root
+              Group=root
+              WorkingDirectory=/opt/sushy-tools
+              ExecStart=/opt/sushy-tools/sushy-emulator.sh
+              Restart=always
+              RestartSec=10
+              TimeoutStartSec=60
+              TimeoutStopSec=30
+
+              # Environment variables
+              Environment=SUSHY_TOOLS_CONFIG=/etc/sushy/sushy-emulator.conf
+              Environment=PYTHONUNBUFFERED=1
+
+              # Security settings
+              NoNewPrivileges=true
+              PrivateTmp=true
+              ProtectSystem=strict
+              ProtectHome=true
+              ReadWritePaths=/opt/sushy-tools /var/lib/libvirt /run/libvirt
+
+              [Install]
+              WantedBy=multi-user.target
+
+        - name: Reload systemd daemon
+          systemd:
+            daemon_reload: yes
+
+        - name: Enable and start Sushy Tools service
+          systemd:
+            name: sushy-emulator
+            enabled: yes
+            state: started
+      notify: Restart sushy-emulator
+
+    - name: Display Redfish credentials
+      debug:
+        msg: |
+          Sushy Tools (Redfish Emulator) is now running.
+
+          Redfish API endpoint: https://localhost:8000/redfish/v1/
+          Username: admin
+          Password: {{ redfish_password }}
+
+          Password saved to: /root/.redfish_password
+
+          Test with: curl -k -u admin:{{ redfish_password }} https://localhost:8000/redfish/v1/Systems/

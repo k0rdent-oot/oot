@@ -1,0 +1,15 @@
+{{- if gt (int .Values.workersNumber) 0 }}
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: K0sWorkerConfigTemplate
+metadata:
+  name: {{ .Release.Name }}-worker
+  namespace: {{ .Release.Namespace }}
+spec:
+  template:
+    spec:
+      version: {{ .Values.k0s.version }}
+      {{- if .Values.worker.args }}
+      args:
+        {{- toYaml .Values.worker.args | nindent 8 }}
+      {{- end }}
+{{- end }}

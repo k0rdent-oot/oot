@@ -1,0 +1,24 @@
+{{- if gt (int .Values.workersNumber) 0 }}
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: TinkerbellMachineTemplate
+metadata:
+  name: {{ .Release.Name }}-worker
+  namespace: {{ .Release.Namespace }}
+spec:
+  template:
+    spec:
+      bootOptions:
+        bootMode: {{ .Values.worker.bootMode }}
+        {{- if and (eq .Values.worker.bootMode "isoboot") .Values.worker.isoURL }}
+        isoURL: {{ .Values.worker.isoURL }}
+        {{- end }}
+      hardwareAffinity:
+        required:
+          - labelSelector:
+              matchLabels:
+                {{- toYaml .Values.worker.hardwareAffinity.matchLabels | nindent 16 }}
+      {{- if .Values.worker.templateOverride }}
+      templateOverride: |
+        {{- .Values.worker.templateOverride | nindent 8 }}
+      {{- end }}
+{{- end }}

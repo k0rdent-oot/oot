@@ -1,0 +1,22 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: TinkerbellMachineTemplate
+metadata:
+  name: {{ .Release.Name }}-cp
+  namespace: {{ .Release.Namespace }}
+spec:
+  template:
+    spec:
+      bootOptions:
+        bootMode: {{ .Values.controlPlane.bootMode }}
+        {{- if and (eq .Values.controlPlane.bootMode "isoboot") .Values.controlPlane.isoURL }}
+        isoURL: {{ .Values.controlPlane.isoURL }}
+        {{- end }}
+      hardwareAffinity:
+        required:
+          - labelSelector:
+              matchLabels:
+                {{- toYaml .Values.controlPlane.hardwareAffinity.matchLabels | nindent 16 }}
+      {{- if .Values.controlPlane.templateOverride }}
+      templateOverride: |
+        {{- .Values.controlPlane.templateOverride | nindent 8 }}
+      {{- end }}

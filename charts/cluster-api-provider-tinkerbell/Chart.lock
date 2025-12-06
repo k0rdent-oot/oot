@@ -1,0 +1,6 @@
+dependencies:
+- name: tinkerbell
+  repository: oci://ghcr.io/tinkerbell/charts
+  version: v0.22.0
+digest: sha256:75e3bf9f940e5bf71e3b28328bac76fefa2da590cc860fe44976c973f773039a
+generated: "2025-12-06T11:35:26.870094854Z"

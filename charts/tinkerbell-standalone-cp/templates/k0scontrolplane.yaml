@@ -1,0 +1,39 @@
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0sControlPlane
+metadata:
+  name: {{ .Release.Name }}-cp
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.controlPlaneNumber }}
+  version: {{ .Values.k0s.version }}
+  k0sConfigSpec:
+    args:
+      {{- toYaml .Values.k0s.args | nindent 6 }}
+    k0s:
+      apiVersion: k0s.k0sproject.io/v1beta1
+      kind: ClusterConfig
+      metadata:
+        name: k0s
+      spec:
+        telemetry:
+          enabled: {{ .Values.k0s.telemetry.enabled }}
+        api:
+          extraArgs:
+            {{- toYaml .Values.k0s.api.extraArgs | nindent 12 }}
+        network:
+          provider: {{ .Values.k0s.network.provider }}
+          podCIDR: {{ index .Values.clusterNetwork.pods.cidrBlocks 0 }}
+          serviceCIDR: {{ index .Values.clusterNetwork.services.cidrBlocks 0 }}
+          {{- if eq .Values.k0s.network.provider "calico" }}
+          calico:
+            mode: {{ .Values.k0s.network.calico.mode }}
+            {{- if .Values.k0s.network.calico.ipAutodetectionMethod }}
+            ipAutodetectionMethod: {{ .Values.k0s.network.calico.ipAutodetectionMethod }}
+            {{- end }}
+          {{- end }}
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: TinkerbellMachineTemplate
+      name: {{ .Release.Name }}-cp
+      namespace: {{ .Release.Namespace }}
