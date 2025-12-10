@@ -11,6 +11,10 @@ spec:
         {{- if and (eq .Values.controlPlane.bootMode "isoboot") .Values.controlPlane.isoURL }}
         isoURL: {{ .Values.controlPlane.isoURL }}
         {{- end }}
+        {{- if and (eq .Values.controlPlane.bootMode "customboot") .Values.controlPlane.custombootConfig }}
+        custombootConfig:
+          {{- toYaml .Values.controlPlane.custombootConfig | nindent 10 }}
+        {{- end }}
       hardwareAffinity:
         required:
           - labelSelector:

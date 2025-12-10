@@ -115,14 +115,14 @@ spec:
 apiVersion: k0rdent.mirantis.com/v1beta1
 kind: ProviderTemplate
 metadata:
-  name: cluster-api-provider-tinkerbell-1-0-0
+  name: cluster-api-provider-tinkerbell-1-1-0
   annotations:
     helm.sh/resource-policy: keep
 spec:
   helm:
     chartSpec:
       chart: cluster-api-provider-tinkerbell
-      version: 1.0.0
+      version: 1.1.0
       interval: 10m0s
       sourceRef:
         kind: HelmRepository
@@ -132,7 +132,7 @@ spec:
 apiVersion: k0rdent.mirantis.com/v1beta1
 kind: ClusterTemplate
 metadata:
-  name: tinkerbell-standalone-cp-0-1-0
+  name: tinkerbell-standalone-cp-0-2-0
   namespace: kcm-system
   annotations:
     helm.sh/resource-policy: keep
@@ -140,7 +140,7 @@ spec:
   helm:
     chartSpec:
       chart: tinkerbell-standalone-cp
-      version: 0.1.0
+      version: 0.2.0
       interval: 10m0s
       sourceRef:
         kind: HelmRepository
@@ -159,7 +159,7 @@ k0s kubectl patch mgmt kcm \
       "path": "/spec/providers/-",
       "value": {
         "name": "cluster-api-provider-tinkerbell",
-        "template": "cluster-api-provider-tinkerbell-1-0-0",
+        "template": "cluster-api-provider-tinkerbell-1-1-0",
         "config": {
           "secret": {
             "create": true,
@@ -444,7 +444,7 @@ metadata:
   name: tinkerbell-demo
   namespace: kcm-system
 spec:
-  template: tinkerbell-standalone-cp-0-1-0
+  template: tinkerbell-standalone-cp-0-2-0
   credential: tinkerbell-cluster-identity-cred
   config:
     controlPlaneNumber: 1
@@ -453,7 +453,21 @@ spec:
       host: "172.17.1.101"
       port: 6443
     controlPlane:
-      bootMode: netboot
+      bootMode: customboot
+      custombootConfig:
+        preparingActions:
+          - powerAction: "off"
+          - bootDevice:
+              device: "pxe"
+              efiBoot: true
+          - powerAction: "on"
+        postActions:
+          - powerAction: "off"
+          - bootDevice:
+              device: "disk"
+              persistent: true
+              efiBoot: true
+          - powerAction: "on"
       hardwareAffinity:
         matchLabels:
           tinkerbell.org/role: control-plane
@@ -537,8 +551,21 @@ spec:
                 volumes:
                   - /var/run/docker.sock:/var/run/docker.sock
     worker:
-      bootMode: isoboot
-      isoURL: "http://172.17.1.1:7171/iso/hook.iso"
+      bootMode: customboot
+      custombootConfig:
+        preparingActions:
+          - powerAction: "off"
+          - bootDevice:
+              device: "pxe"
+              efiBoot: true
+          - powerAction: "on"
+        postActions:
+          - powerAction: "off"
+          - bootDevice:
+              device: "disk"
+              persistent: true
+              efiBoot: true
+          - powerAction: "on"
       hardwareAffinity:
         matchLabels:
           tinkerbell.org/role: worker
@@ -622,7 +649,11 @@ spec:
                 volumes:
                   - /var/run/docker.sock:/var/run/docker.sock
     k0s:
-      version: v1.33.4+k0s.0
+      version: v1.34.2+k0s.0
+      network:
+        provider: calico
+        calico:
+          mode: vxlan
 EOF
 ```
 

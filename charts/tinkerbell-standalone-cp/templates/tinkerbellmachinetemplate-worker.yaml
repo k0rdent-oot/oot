@@ -12,6 +12,10 @@ spec:
         {{- if and (eq .Values.worker.bootMode "isoboot") .Values.worker.isoURL }}
         isoURL: {{ .Values.worker.isoURL }}
         {{- end }}
+        {{- if and (eq .Values.worker.bootMode "customboot") .Values.worker.custombootConfig }}
+        custombootConfig:
+          {{- toYaml .Values.worker.custombootConfig | nindent 10 }}
+        {{- end }}
       hardwareAffinity:
         required:
           - labelSelector:

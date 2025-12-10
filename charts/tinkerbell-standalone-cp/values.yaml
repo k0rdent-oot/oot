@@ -21,8 +21,9 @@ controlPlaneEndpoint: # @schema description: Control plane endpoint configuratio
 
 # Control plane machine configuration
 controlPlane: # @schema description: Control plane machine configuration; type: object
-  bootMode: netboot # @schema description: Boot mode; type: string; enum: [netboot, isoboot]
+  bootMode: netboot # @schema description: Boot mode; type: string; enum: [netboot, isoboot, customboot]
   isoURL: "" # @schema description: ISO URL for isoboot mode; type: string
+  custombootConfig: {} # @schema description: Custom boot configuration for customboot mode (preparingActions and postActions); type: object
   hardwareAffinity: # @schema description: Hardware affinity for control plane; type: object
     matchLabels: # @schema description: Labels to match; type: object
       tinkerbell.org/role: control-plane
@@ -30,8 +31,9 @@ controlPlane: # @schema description: Control plane machine configuration; type: 
 
 # Worker machine configuration
 worker: # @schema description: Worker machine configuration; type: object
-  bootMode: netboot # @schema description: Boot mode; type: string; enum: [netboot, isoboot]
+  bootMode: netboot # @schema description: Boot mode; type: string; enum: [netboot, isoboot, customboot]
   isoURL: "" # @schema description: ISO URL for isoboot mode; type: string
+  custombootConfig: {} # @schema description: Custom boot configuration for customboot mode (preparingActions and postActions); type: object
   hardwareAffinity: # @schema description: Hardware affinity for workers; type: object
     matchLabels: # @schema description: Labels to match; type: object
       tinkerbell.org/role: worker
@@ -41,7 +43,7 @@ worker: # @schema description: Worker machine configuration; type: object
 
 # K0s parameters
 k0s: # @schema description: K0s parameters; type: object
-  version: v1.33.4+k0s.0 # @schema description: K0s version; type: string
+  version: v1.34.2+k0s.0 # @schema description: K0s version; type: string
   args: # @schema description: Arguments to pass to k0s controller; type: array
     - --enable-worker
     - --no-taints
