@@ -663,20 +663,6 @@ EOF
 watch k0s kubectl get cld,tinkerbellcluster,k0scontrolplane,tinkerbellmachine,workflow -A
 ```
 
-## Troubleshooting
-
-### Workflow stuck at reboot action (VM only)
-
-If the workflow is stuck at the "Reboot into installed OS" action, the VM may not have properly triggered the reboot event. This is a **VM-specific issue** that does not occur on bare-metal hardware.
-
-**Workaround**: Manually trigger the reboot via virsh:
-
-```bash
-virsh reboot <vm-name>
-```
-
-The libvirt reboot monitor service will catch the reboot event and perform a cold reboot (destroy+start) to ensure the boot order is reset to disk-first.
-
 ## Extract child cluster kubeconfig
 
 Once the cluster deployment is ready, you can extract the kubeconfig to access the child cluster:

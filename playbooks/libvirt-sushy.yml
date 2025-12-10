@@ -46,13 +46,6 @@
         daemon_reload: yes
       when: ansible_service_mgr == 'systemd'
 
-    - name: Restart libvirt-reboot-monitor
-      systemd:
-        name: libvirt-reboot-monitor
-        state: restarted
-        daemon_reload: yes
-      when: ansible_service_mgr == 'systemd'
-
   tasks:
     - name: Update system packages
       apt:
@@ -160,96 +153,11 @@
           when: ansible_distribution == "Debian"
       notify: Restart libvirtd
 
-    # Workaround for sushy-tools ignoring BootSourceOverrideEnabled with libvirt driver.
-    # Sushy-tools always sets boot device as "continuous" (persistent), ignoring one-time boot requests.
-    # See: https://github.com/openstack/sushy-tools/blob/2.1.0/sushy_tools/emulator/main.py#L538-L540
-    - name: Configure libvirt hook to reset boot order on VM stop
-      block:
-        - name: Ensure libvirt hooks directory exists
-          file:
-            path: /etc/libvirt/hooks
-            state: directory
-            mode: "0755"
-
-        - name: Create boot reset script
-          copy:
-            dest: /usr/local/bin/reset-boot-to-disk.sh
-            mode: "0755"
-            content: |
-              #!/bin/bash
-              # Reset boot order to disk first for a libvirt domain
-              # This is a workaround for sushy-tools ignoring BootSourceOverrideEnabled
-              set -euo pipefail
-
-              DOMAIN="$1"
-              TMPFILE=$(mktemp)
-              trap "rm -f $TMPFILE" EXIT
-
-              virsh dumpxml --inactive "$DOMAIN" > "$TMPFILE" 2>/dev/null || exit 0
-
-              python3 << PYEOF
-              import xml.etree.ElementTree as ET
-              import sys
-
-              try:
-                  tree = ET.parse("$TMPFILE")
-                  root = tree.getroot()
-
-                  devices = root.find("devices")
-                  if devices is None:
-                      sys.exit(0)
-
-                  # Remove all existing boot elements from devices
-                  for disk in devices.findall("disk"):
-                      for boot in disk.findall("boot"):
-                          disk.remove(boot)
-
-                  for iface in devices.findall("interface"):
-                      for boot in iface.findall("boot"):
-                          iface.remove(boot)
-
-                  # Set disk as boot order 1
-                  boot_order = 1
-                  for disk in devices.findall("disk"):
-                      if disk.get("device") == "disk":
-                          boot_elem = ET.SubElement(disk, "boot")
-                          boot_elem.set("order", str(boot_order))
-                          boot_order += 1
-                          break
-
-                  # Set network interface as boot order 2
-                  for iface in devices.findall("interface"):
-                      boot_elem = ET.SubElement(iface, "boot")
-                      boot_elem.set("order", str(boot_order))
-                      break
-
-                  tree.write("$TMPFILE")
-              except Exception as e:
-                  sys.exit(1)
-              PYEOF
-
-              virsh define "$TMPFILE" &>/dev/null || true
-
-        - name: Create libvirt QEMU hook
-          copy:
-            dest: /etc/libvirt/hooks/qemu
-            mode: "0755"
-            content: |
-              #!/bin/bash
-              # Libvirt QEMU hook - resets boot order to disk on VM stop
-              # Uses systemd-run to avoid blocking libvirt (hooks must not call back into libvirt synchronously)
-              # See: https://libvirt.org/hooks.html
-
-              DOMAIN="$1"
-              OPERATION="$2"
-
-              if [[ "$OPERATION" == "stopped" ]]; then
-                  systemd-run --no-block --unit="libvirt-boot-reset-${DOMAIN}-$(date +%s)" \
-                      /usr/local/bin/reset-boot-to-disk.sh "$DOMAIN" &>/dev/null || true
-              fi
-
-              exit 0
-      notify: Restart libvirtd
+    - name: Ensure libvirt hooks directory exists
+      file:
+        path: /etc/libvirt/hooks
+        state: directory
+        mode: "0755"
 
     - name: Create libvirt network hook for iptables
       copy:
@@ -286,83 +194,20 @@
               #   iptables -t nat -I LIBVIRT_PRT 1 -s "$VM_CIDR" -d "$POD_CIDR" -p tcp --dport 7172 -j RETURN
               # ) &
               # ---
+
               # Configure bridge for iPXE compatibility
               # See: https://github.com/ipxe/ipxe/pull/863
               ethtool -K "$BRIDGE" tx off sg off tso off 2>/dev/null || true
               ;;
-            # stopped)
-            #   # Remove the rule when network stops
-            #   iptables -t nat -D LIBVIRT_PRT -s "$VM_CIDR" -d "$POD_CIDR" -p tcp --dport 7172 -j RETURN 2>/dev/null || true
-            #   ;;
+            stopped)
+              # Remove the rule when network stops
+              # iptables -t nat -D LIBVIRT_PRT -s "$VM_CIDR" -d "$POD_CIDR" -p tcp --dport 7172 -j RETURN 2>/dev/null || true
+              :
+              ;;
           esac
 
           exit 0
       notify: Restart libvirtd
-
-    # Monitor domain reboot events to reset boot order (hooks don't catch guest-initiated reboots)
-    - name: Configure libvirt reboot event monitor
-      block:
-        - name: Create reboot event monitor script
-          copy:
-            dest: /usr/local/bin/libvirt-reboot-monitor.sh
-            mode: "0755"
-            content: |
-              #!/usr/bin/env bash
-              # Monitor libvirt domain reboot events and reset boot order to disk
-              # This catches guest-initiated reboots that the qemu hook doesn't see
-              # Output format: "2025-12-05 20:37:08.789+0000: event 'reboot' for domain 'vm-name'"
-
-              set -eu
-
-              echo "Starting libvirt reboot monitor..."
-
-              virsh event --event reboot --loop --timestamp 2>/dev/null | while read -r line; do
-                  # Extract domain name using sed
-                  domain=$(echo "$line" | sed -n "s/.*for domain '\([^']*\)'.*/\1/p")
-                  if [ -n "$domain" ]; then
-                      echo "$(date): Reboot event for domain: $domain - forcing cold reboot for boot order reset"
-                      # Run in background: wait for guest reboot, then destroy+start
-                      # The qemu hook will reset boot order on "stopped" event
-                      (
-                          sleep 5  # Wait for guest to complete reboot initiation
-                          virsh destroy "$domain" &>/dev/null || true
-                          sleep 5  # Wait for qemu hook to reset boot order
-                          virsh start "$domain" &>/dev/null || true
-                          echo "$(date): Domain $domain cold rebooted with disk-first boot order"
-                      ) &
-                  fi
-              done
-          notify: Restart libvirt-reboot-monitor
-
-        - name: Create systemd service for reboot event monitor
-          copy:
-            dest: /etc/systemd/system/libvirt-reboot-monitor.service
-            mode: "0644"
-            content: |
-              [Unit]
-              Description=Libvirt Domain Reboot Event Monitor
-              Documentation=https://libvirt.org/html/libvirt-libvirt-domain.html
-              After=libvirtd.service
-
-              [Service]
-              Type=simple
-              ExecStart=/usr/local/bin/libvirt-reboot-monitor.sh
-              Restart=always
-              RestartSec=5
-
-              [Install]
-              WantedBy=multi-user.target
-          notify: Restart libvirt-reboot-monitor
-
-        - name: Reload systemd daemon for reboot monitor
-          systemd:
-            daemon_reload: yes
-
-        - name: Enable and start reboot event monitor service
-          systemd:
-            name: libvirt-reboot-monitor
-            enabled: yes
-            state: started
 
     - name: Flush handlers to restart libvirtd before sushy-tools
       meta: flush_handlers
