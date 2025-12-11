@@ -218,6 +218,57 @@
         state: started
         enabled: yes
 
+    - name: Configure default libvirt storage pool
+      block:
+        - name: Check if default storage pool exists
+          command: virsh pool-info default
+          register: default_pool_check
+          ignore_errors: true
+          changed_when: false
+
+        - name: Check if images storage pool exists
+          command: virsh pool-info images
+          register: images_pool_check
+          ignore_errors: true
+          changed_when: false
+          when: default_pool_check.rc != 0
+
+        - name: Rename images pool to default (stop images pool)
+          command: virsh pool-destroy images
+          when: default_pool_check.rc != 0 and images_pool_check.rc == 0
+          ignore_errors: true
+
+        - name: Rename images pool to default (undefine images pool)
+          command: virsh pool-undefine images
+          when: default_pool_check.rc != 0 and images_pool_check.rc == 0
+
+        - name: Create default storage pool directory
+          file:
+            path: /var/lib/libvirt/images
+            state: directory
+            mode: "0755"
+          when: default_pool_check.rc != 0
+
+        - name: Define default storage pool
+          command: >
+            virsh pool-define-as default dir
+            --target /var/lib/libvirt/images
+          when: default_pool_check.rc != 0
+
+        - name: Build default storage pool
+          command: virsh pool-build default
+          when: default_pool_check.rc != 0
+          ignore_errors: true
+
+        - name: Start default storage pool
+          command: virsh pool-start default
+          when: default_pool_check.rc != 0
+          ignore_errors: true
+
+        - name: Set default storage pool to autostart
+          command: virsh pool-autostart default
+          when: default_pool_check.rc != 0
+
     - name: Configure Tinkerbell libvirt network
       block:
         - name: Define tinkerbell network
