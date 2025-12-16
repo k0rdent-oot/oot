@@ -38,8 +38,7 @@ worker: # @schema description: Worker machine configuration; type: object
     matchLabels: # @schema description: Labels to match; type: object
       tinkerbell.org/role: worker
   templateOverride: "" # @schema description: Tinkerbell workflow template override; type: string
-  args: # @schema description: Arguments to pass to k0s worker; type: array
-    - --enable-cloud-provider
+  args: [] # @schema description: Arguments to pass to k0s worker; type: array
 
 # K0s parameters
 k0s: # @schema description: K0s parameters; type: object
