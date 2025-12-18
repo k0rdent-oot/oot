@@ -1,0 +1,25 @@
+{{- if .Values.gateway.create }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: {{ include "tinkerbell-hcp-kubeadm.gatewayName" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  gatewayClassName: {{ .Values.gateway.gatewayClass.name }}
+  {{- if .Values.gateway.addresses }}
+  addresses:
+    {{- toYaml .Values.gateway.addresses | nindent 4 }}
+  {{- end }}
+  listeners:
+    - name: tls-passthrough
+      protocol: {{ .Values.gateway.protocol }}
+      port: {{ .Values.gateway.port }}
+      hostname: {{ .Values.gateway.hostname | quote }}
+      tls:
+        mode: {{ .Values.gateway.tlsMode }}
+      allowedRoutes:
+        namespaces:
+          from: Same
+        kinds:
+          - kind: TLSRoute
+{{- end }}

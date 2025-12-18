@@ -1,0 +1,34 @@
+{{- if gt (int .Values.workersNumber) 0 }}
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: {{ .Release.Name }}-worker
+  namespace: {{ .Release.Namespace }}
+  labels:
+    cluster.x-k8s.io/cluster-name: {{ include "tinkerbell-hcp-kubeadm.clusterName" . }}
+    nodepool: worker-pool
+spec:
+  clusterName: {{ include "tinkerbell-hcp-kubeadm.clusterName" . }}
+  replicas: {{ .Values.workersNumber }}
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: {{ include "tinkerbell-hcp-kubeadm.clusterName" . }}
+      nodepool: worker-pool
+  template:
+    metadata:
+      labels:
+        cluster.x-k8s.io/cluster-name: {{ include "tinkerbell-hcp-kubeadm.clusterName" . }}
+        nodepool: worker-pool
+    spec:
+      clusterName: {{ include "tinkerbell-hcp-kubeadm.clusterName" . }}
+      version: {{ .Values.kubernetes.version }}
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+          name: {{ .Release.Name }}-worker
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: TinkerbellMachineTemplate
+        name: {{ .Release.Name }}-worker
+{{- end }}

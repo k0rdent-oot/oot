@@ -1,0 +1,20 @@
+{{- if and .Values.gateway.gatewayClass.create .Values.gateway.envoyProxy.create }}
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: {{ include "tinkerbell-hcp-kubeadm.clusterName" . }}-proxy-config
+  namespace: {{ .Release.Namespace }}
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyService:
+        type: LoadBalancer
+        {{- if .Values.gateway.envoyProxy.loadBalancerIP }}
+        loadBalancerIP: {{ .Values.gateway.envoyProxy.loadBalancerIP | quote }}
+        {{- end }}
+        {{- if .Values.gateway.envoyProxy.annotations }}
+        annotations:
+          {{- toYaml .Values.gateway.envoyProxy.annotations | nindent 10 }}
+        {{- end }}
+{{- end }}

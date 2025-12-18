@@ -1,0 +1,9 @@
+apiVersion: v2
+name: cluster-api-provider-kubeadm
+description: A Helm chart for Cluster API Kubeadm Bootstrap and Control Plane Providers
+type: application
+version: 1.0.0
+appVersion: "v1.11.3"
+annotations:
+  cluster.x-k8s.io/provider: bootstrap-kubeadm, control-plane-kubeadm
+  cluster.x-k8s.io/v1beta1: v1beta1

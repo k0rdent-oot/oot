@@ -1,0 +1,10 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: TinkerbellCluster
+metadata:
+  name: {{ include "tinkerbell-hcp-kubeadm.clusterName" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  imageLookupFormat: {{ .Values.tinkerbell.imageLookup.format | quote }}
+  imageLookupBaseRegistry: {{ .Values.tinkerbell.imageLookup.baseRegistry }}
+  imageLookupOSDistro: {{ .Values.tinkerbell.imageLookup.osDistro }}
+  imageLookupOSVersion: {{ .Values.tinkerbell.imageLookup.osVersion | quote }}

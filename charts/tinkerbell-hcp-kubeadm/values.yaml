@@ -1,0 +1,90 @@
+# Cluster parameters
+workersNumber: 1 # @schema description: The number of worker nodes; type: integer; minimum: 1
+
+clusterIdentity: # @schema description: Cluster identity reference, auto-populated; type: object
+  name: "" # @schema description: Cluster identity secret name, auto-populated; type: string
+
+# Kubernetes version
+kubernetes: # @schema description: Kubernetes configuration; type: object
+  version: v1.34.2 # @schema description: Kubernetes version; type: string
+
+# Cluster network configuration
+clusterNetwork: # @schema description: Cluster network configuration; type: object
+  pods: # @schema description: Pod network configuration; type: object
+    cidrBlocks: # @schema description: Pod CIDR blocks; type: array
+      - 192.168.0.0/18
+  services: # @schema description: Service network configuration; type: object
+    cidrBlocks: # @schema description: Service CIDR blocks; type: array
+      - 10.96.0.0/12
+
+# Gateway API configuration for control plane traffic
+gateway: # @schema description: Gateway API configuration; type: object
+  gatewayClass: # @schema description: GatewayClass configuration; type: object
+    create: true # @schema description: Create the GatewayClass resource; type: boolean
+    name: envoy # @schema description: GatewayClass name; type: string
+    controllerName: gateway.envoyproxy.io/gatewayclass-controller # @schema description: Gateway controller name; type: string
+  create: true # @schema description: Create the Gateway resource; type: boolean
+  name: capi # @schema description: Gateway name; type: string
+  hostname: "" # @schema description: Gateway hostname pattern (e.g., *.192.168.1.100.nip.io); type: string
+  addresses: [] # @schema description: Gateway addresses for LoadBalancer IP assignment (e.g., [{type: IPAddress, value: 192.168.1.100}]); type: array
+  port: 443 # @schema description: Gateway TLS port; type: integer; minimum: 1; maximum: 65535
+  protocol: TLS # @schema description: Gateway protocol; type: string
+  tlsMode: Passthrough # @schema description: TLS mode; type: string; enum: [Passthrough, Terminate]
+  envoyProxy: # @schema description: EnvoyProxy configuration for the Gateway data plane service; type: object
+    create: true # @schema description: Create the EnvoyProxy resource for service customization; type: boolean
+    loadBalancerIP: "" # @schema description: LoadBalancer IP for the Gateway Envoy service; type: string
+    annotations: {} # @schema description: Annotations for the Gateway Envoy service; type: object
+
+# Hosted Control Plane configuration
+hostedControlPlane: # @schema description: Hosted Control Plane configuration; type: object
+  replicas: 1 # @schema description: Number of control plane replicas; type: integer; minimum: 1; maximum: 3
+  apiServerService: # @schema description: API Server Service configuration; type: object
+    loadBalancerIP: "" # @schema description: LoadBalancer IP for the HCP API server service (required for external access); type: string
+  deployment: # @schema description: Control plane deployment settings; type: object
+    controllerManager: # @schema description: Controller Manager configuration; type: object
+      args: # @schema description: Controller Manager arguments; type: object
+        allocate-node-cidrs: "true"
+  konnectivityClient: # @schema description: Konnectivity client configuration; type: object
+    replicas: 1 # @schema description: Konnectivity client replicas; type: integer; minimum: 1
+  kubeProxy: # @schema description: Kube-proxy configuration; type: object
+    enabled: true # @schema description: Enable kube-proxy; type: boolean
+  coredns: # @schema description: CoreDNS configuration; type: object
+    enabled: true # @schema description: Enable CoreDNS; type: boolean
+
+# kube-vip IP pool configuration for automatic LoadBalancer IP assignment
+# This creates a ConfigMap that kube-vip-cloud-provider uses to assign IPs to LoadBalancer services
+kubeVipIPPool: # @schema description: kube-vip IP pool configuration; type: object
+  enabled: false # @schema description: Enable kube-vip IP pool ConfigMap creation; type: boolean
+  # IP range for the namespace (e.g., "172.17.1.201-172.17.1.250")
+  range: "" # @schema description: IP range for LoadBalancer services (e.g., 172.17.1.201-172.17.1.250); type: string
+  # Alternatively, use CIDR notation (e.g., "172.17.1.200/29")
+  cidr: "" # @schema description: CIDR block for LoadBalancer services (alternative to range); type: string
+
+# Tinkerbell infrastructure configuration
+# Note: Tinkerbell server URLs (publicIP, artifactsFileServer) are configured in the
+# cluster-api-provider-tinkerbell ProviderTemplate. Use those values in your templateOverride.
+tinkerbell: # @schema description: Tinkerbell infrastructure configuration; type: object
+  imageLookup: # @schema description: Image lookup configuration; type: object
+    format: "{{.BaseRegistry}}/{{.OSDistro}}-{{.OSVersion}}:{{.KubernetesVersion}}.gz" # @schema description: Image lookup format; type: string
+    baseRegistry: ghcr.io/tinkerbell/cluster-api-provider-tinkerbell # @schema description: Base registry for images; type: string
+    osDistro: ubuntu # @schema description: OS distribution; type: string
+    osVersion: "2404" # @schema description: OS version; type: string
+
+# Worker machine configuration
+worker: # @schema description: Worker machine configuration; type: object
+  bootMode: netboot # @schema description: Boot mode; type: string; enum: [netboot, isoboot, customboot]
+  isoURL: "" # @schema description: ISO URL for isoboot mode; type: string
+  custombootConfig: {} # @schema description: Custom boot configuration for customboot mode (preparingActions and postActions); type: object
+  hardwareAffinity: # @schema description: Hardware affinity for workers; type: object
+    matchLabels: # @schema description: Labels to match; type: object
+      tinkerbell.org/role: worker
+  templateOverride: "" # @schema description: Tinkerbell workflow template override; type: string
+
+# Kubeadm bootstrap configuration
+kubeadm: # @schema description: Kubeadm bootstrap configuration; type: object
+  users: [] # @schema description: Users to create on nodes; type: array
+  preKubeadmCommands: [] # @schema description: Commands to run before kubeadm; type: array
+  postKubeadmCommands: [] # @schema description: Commands to run after kubeadm; type: array
+  joinConfiguration: # @schema description: Kubeadm join configuration; type: object
+    nodeRegistration: # @schema description: Node registration settings; type: object
+      kubeletExtraArgs: {} # @schema description: Extra kubelet arguments; type: object

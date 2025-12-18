@@ -1,0 +1,6 @@
+# Provider configuration
+manager: {} # @schema description: Manager configuration; type: object; additionalProperties: true
+
+# Envoy Gateway dependency (required for TLS passthrough to hosted control planes)
+envoyGateway: # @schema description: Envoy Gateway configuration; type: object
+  enabled: true # @schema description: Enable Envoy Gateway dependency; type: boolean

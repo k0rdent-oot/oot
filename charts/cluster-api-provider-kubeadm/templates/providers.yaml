@@ -1,0 +1,58 @@
+{{- $version := .Values.version | default .Chart.AppVersion }}
+apiVersion: operator.cluster.x-k8s.io/v1alpha2
+kind: BootstrapProvider
+metadata:
+  name: kubeadm
+  namespace: {{ .Release.Namespace }}
+spec:
+  version: {{ $version }}
+  {{- if .Values.bootstrap.manager }}
+  manager: {{- toYaml .Values.bootstrap.manager | nindent 4 }}
+  {{- end }}
+  {{- if .Values.bootstrap.deployment }}
+  deployment: {{- toYaml .Values.bootstrap.deployment | nindent 4 }}
+  {{- end }}
+  {{- if .Values.bootstrap.configSecret }}
+  configSecret: {{- toYaml .Values.bootstrap.configSecret | nindent 4 }}
+  {{- end }}
+  {{- if .Values.bootstrap.fetchConfig }}
+  fetchConfig: {{- toYaml .Values.bootstrap.fetchConfig | nindent 4 }}
+  {{- end }}
+  {{- if .Values.bootstrap.additionalManifests }}
+  additionalManifests: {{- toYaml .Values.bootstrap.additionalManifests | nindent 4 }}
+  {{- end }}
+  {{- if .Values.bootstrap.manifestPatches }}
+  manifestPatches: {{- toYaml .Values.bootstrap.manifestPatches | nindent 4 }}
+  {{- end }}
+  {{- if .Values.bootstrap.additionalDeployments }}
+  additionalDeployments: {{- toYaml .Values.bootstrap.additionalDeployments | nindent 4 }}
+  {{- end }}
+---
+apiVersion: operator.cluster.x-k8s.io/v1alpha2
+kind: ControlPlaneProvider
+metadata:
+  name: kubeadm
+  namespace: {{ .Release.Namespace }}
+spec:
+  version: {{ $version }}
+  {{- if .Values.controlPlane.manager }}
+  manager: {{- toYaml .Values.controlPlane.manager | nindent 4 }}
+  {{- end }}
+  {{- if .Values.controlPlane.deployment }}
+  deployment: {{- toYaml .Values.controlPlane.deployment | nindent 4 }}
+  {{- end }}
+  {{- if .Values.controlPlane.configSecret }}
+  configSecret: {{- toYaml .Values.controlPlane.configSecret | nindent 4 }}
+  {{- end }}
+  {{- if .Values.controlPlane.fetchConfig }}
+  fetchConfig: {{- toYaml .Values.controlPlane.fetchConfig | nindent 4 }}
+  {{- end }}
+  {{- if .Values.controlPlane.additionalManifests }}
+  additionalManifests: {{- toYaml .Values.controlPlane.additionalManifests | nindent 4 }}
+  {{- end }}
+  {{- if .Values.controlPlane.manifestPatches }}
+  manifestPatches: {{- toYaml .Values.controlPlane.manifestPatches | nindent 4 }}
+  {{- end }}
+  {{- if .Values.controlPlane.additionalDeployments }}
+  additionalDeployments: {{- toYaml .Values.controlPlane.additionalDeployments | nindent 4 }}
+  {{- end }}

@@ -3,7 +3,7 @@ name: tinkerbell-standalone-cp
 description: |
   A KCM template to deploy a k0s cluster on Tinkerbell bare-metal with bootstrapped control plane nodes.
 type: application
-version: 0.2.0
+version: 1.0.0
 appVersion: "v1.34.2+k0s.0"
 annotations:
   cluster.x-k8s.io/provider: infrastructure-tinkerbell, control-plane-k0sproject-k0smotron, bootstrap-k0sproject-k0smotron

@@ -12,3 +12,8 @@ tinkerbell: # @schema description: Tinkerbell subchart configuration; type: obje
   publicIP: "" # @schema description: LoadBalancer IP for Tinkerbell services; type: string
   artifactsFileServer: "" # @schema description: URL for HookOS artifacts server; type: string
   trustedProxies: [] # @schema description: List of trusted proxy CIDRs; type: array
+
+# kube-vip-cloud-provider subchart configuration
+# Provides automatic LoadBalancer IP assignment for services
+kubeVipCloudProvider: # @schema description: kube-vip-cloud-provider subchart configuration; type: object
+  enabled: true # @schema description: Enable kube-vip-cloud-provider deployment; type: boolean

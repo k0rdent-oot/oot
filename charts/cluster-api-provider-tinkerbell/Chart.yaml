@@ -12,3 +12,7 @@ dependencies:
     version: "v0.22.0"
     repository: "oci://ghcr.io/tinkerbell/charts"
     condition: tinkerbell.enabled
+  - name: kube-vip-cloud-provider
+    version: "0.2.9"
+    repository: "https://kube-vip.github.io/helm-charts"
+    condition: kubeVipCloudProvider.enabled

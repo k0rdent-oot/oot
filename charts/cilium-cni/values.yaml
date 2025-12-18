@@ -1,0 +1,26 @@
+# Cilium CNI configuration
+# Reference: https://docs.cilium.io/en/stable/installation/k8s-install-helm/
+
+cilium: # @schema description: Cilium Helm chart values; type: object
+  ipam: # @schema description: IP Address Management configuration; type: object
+    mode: kubernetes # @schema description: IPAM mode (kubernetes, cluster-pool, eni, azure, alibabacloud); type: string
+
+  # Kubernetes API server configuration
+  k8sServiceHost: "" # @schema description: Kubernetes API server hostname (required for HCP); type: string
+  k8sServicePort: 443 # @schema description: Kubernetes API server port; type: integer
+
+  # Operator configuration
+  operator: # @schema description: Cilium Operator configuration; type: object
+    replicas: 1 # @schema description: Number of operator replicas; type: integer
+    tolerations: # @schema description: Operator tolerations for scheduling on tainted nodes; type: array
+      - key: node.cluster.x-k8s.io/uninitialized
+        operator: Exists
+        effect: NoSchedule
+
+  # Hubble observability (optional)
+  hubble: # @schema description: Hubble observability configuration; type: object
+    enabled: false # @schema description: Enable Hubble; type: boolean
+    relay: # @schema description: Hubble Relay configuration; type: object
+      enabled: false # @schema description: Enable Hubble Relay; type: boolean
+    ui: # @schema description: Hubble UI configuration; type: object
+      enabled: false # @schema description: Enable Hubble UI; type: boolean

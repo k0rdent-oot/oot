@@ -1,0 +1,15 @@
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: ProviderInterface
+metadata:
+  name: cluster-api-provider-hosted-control-plane
+  annotations:
+    helm.sh/resource-policy: keep
+  labels:
+    helm.toolkit.fluxcd.io/name: cluster-api-provider-hosted-control-plane
+    helm.toolkit.fluxcd.io/namespace: {{ .Release.Namespace }}
+spec:
+  clusterGVKs:
+    - group: controlplane.cluster.x-k8s.io
+      version: v1alpha1
+      kind: HostedControlPlane
+  description: "Hosted Control Plane provider for Cluster API"

@@ -1,0 +1,21 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: {{ include "tinkerbell-hcp-kubeadm.clusterName" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+        {{- toYaml .Values.clusterNetwork.pods.cidrBlocks | nindent 8 }}
+    services:
+      cidrBlocks:
+        {{- toYaml .Values.clusterNetwork.services.cidrBlocks | nindent 8 }}
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+    kind: HostedControlPlane
+    name: {{ include "tinkerbell-hcp-kubeadm.clusterName" . }}
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: TinkerbellCluster
+    name: {{ include "tinkerbell-hcp-kubeadm.clusterName" . }}

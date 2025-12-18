@@ -1,0 +1,29 @@
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+kind: HostedControlPlane
+metadata:
+  name: {{ include "tinkerbell-hcp-kubeadm.clusterName" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  version: {{ .Values.kubernetes.version }}
+  replicas: {{ .Values.hostedControlPlane.replicas }}
+  gateway:
+    namespace: {{ .Release.Namespace }}
+    name: {{ include "tinkerbell-hcp-kubeadm.gatewayName" . }}
+  deployment:
+    {{- if .Values.hostedControlPlane.deployment.controllerManager }}
+    controllerManager:
+      {{- if .Values.hostedControlPlane.deployment.controllerManager.args }}
+      args:
+        {{- range $key, $value := .Values.hostedControlPlane.deployment.controllerManager.args }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+  konnectivityClient:
+    replicas: {{ .Values.hostedControlPlane.konnectivityClient.replicas }}
+  {{- if .Values.hostedControlPlane.kubeProxy.enabled }}
+  kubeProxy: {}
+  {{- end }}
+  {{- if .Values.hostedControlPlane.coredns.enabled }}
+  coredns: {}
+  {{- end }}

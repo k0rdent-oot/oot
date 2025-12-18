@@ -2,5 +2,8 @@ dependencies:
 - name: tinkerbell
   repository: oci://ghcr.io/tinkerbell/charts
   version: v0.22.0
-digest: sha256:75e3bf9f940e5bf71e3b28328bac76fefa2da590cc860fe44976c973f773039a
-generated: "2025-12-06T11:35:26.870094854Z"
+- name: kube-vip-cloud-provider
+  repository: https://kube-vip.github.io/helm-charts
+  version: 0.2.9
+digest: sha256:7137f40559496f0f9579947ab7f144c124cb416f68aad7b601ca889089ba616b
+generated: "2025-12-19T01:19:01.559081769Z"

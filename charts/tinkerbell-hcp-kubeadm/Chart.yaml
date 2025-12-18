@@ -1,0 +1,14 @@
+apiVersion: v2
+name: tinkerbell-hcp-kubeadm
+description: |
+  A KCM template to deploy a Kubernetes cluster on Tinkerbell bare-metal with hosted control plane
+  using cluster-api-provider-hosted-control-plane.
+type: application
+version: 1.0.0
+appVersion: "v1.34.2"
+annotations:
+  cluster.x-k8s.io/provider: infrastructure-tinkerbell, control-plane-hosted-control-plane, bootstrap-kubeadm
+  k0rdent.mirantis.com/type: deployment
+  cluster.x-k8s.io/bootstrap-kubeadm: v1beta1
+  cluster.x-k8s.io/control-plane-hosted-control-plane: v1alpha1
+  cluster.x-k8s.io/infrastructure-tinkerbell: v1beta1

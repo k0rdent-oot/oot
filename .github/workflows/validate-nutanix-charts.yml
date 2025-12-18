@@ -100,7 +100,7 @@ jobs:
           mv -v *.json schemas/
 
       - name: Install helm-unittest
-        run: helm plugin install https://github.com/helm-unittest/helm-unittest
+        run: helm plugin install https://github.com/helm-unittest/helm-unittest --verify=false
 
       - name: Run helm unittest
         run: |

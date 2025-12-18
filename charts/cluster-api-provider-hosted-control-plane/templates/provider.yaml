@@ -1,0 +1,12 @@
+apiVersion: operator.cluster.x-k8s.io/v1alpha2
+kind: ControlPlaneProvider
+metadata:
+  name: hosted-control-plane
+  namespace: {{ .Release.Namespace }}
+spec:
+  version: {{ printf "v%s" .Chart.AppVersion | quote }}
+  fetchConfig:
+    url: https://github.com/teutonet/cluster-api-provider-hosted-control-plane/releases/download/{{ printf "v%s" .Chart.AppVersion }}/control-plane-components.yaml
+  {{- if .Values.manager }}
+  manager: {{ toYaml .Values.manager | nindent 4 }}
+  {{- end }}

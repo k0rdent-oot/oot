@@ -1,0 +1,39 @@
+{{- if gt (int .Values.workersNumber) 0 }}
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: {{ .Release.Name }}-worker
+  namespace: {{ .Release.Namespace }}
+spec:
+  template:
+    spec:
+      joinConfiguration:
+        nodeRegistration:
+          {{- if .Values.kubeadm.joinConfiguration.nodeRegistration.kubeletExtraArgs }}
+          kubeletExtraArgs:
+            {{- range $key, $value := .Values.kubeadm.joinConfiguration.nodeRegistration.kubeletExtraArgs }}
+            {{ $key }}: {{ $value | quote }}
+            {{- end }}
+          {{- end }}
+      {{- if .Values.kubeadm.users }}
+      users:
+        {{- range .Values.kubeadm.users }}
+        - name: {{ .name }}
+          {{- if .sudo }}
+          sudo: {{ .sudo | quote }}
+          {{- end }}
+          {{- if .sshAuthorizedKeys }}
+          sshAuthorizedKeys:
+            {{- toYaml .sshAuthorizedKeys | nindent 12 }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+      {{- if .Values.kubeadm.preKubeadmCommands }}
+      preKubeadmCommands:
+        {{- toYaml .Values.kubeadm.preKubeadmCommands | nindent 8 }}
+      {{- end }}
+      {{- if .Values.kubeadm.postKubeadmCommands }}
+      postKubeadmCommands:
+        {{- toYaml .Values.kubeadm.postKubeadmCommands | nindent 8 }}
+      {{- end }}
+{{- end }}

@@ -1,0 +1,16 @@
+{{- if .Values.kubeVipIPPool.enabled }}
+{{- if or .Values.kubeVipIPPool.range .Values.kubeVipIPPool.cidr }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kube-vip-cloud-provider
+  namespace: {{ .Release.Namespace }}
+data:
+  {{- if .Values.kubeVipIPPool.range }}
+  range-{{ .Release.Namespace }}: {{ .Values.kubeVipIPPool.range | quote }}
+  {{- end }}
+  {{- if .Values.kubeVipIPPool.cidr }}
+  cidr-{{ .Release.Namespace }}: {{ .Values.kubeVipIPPool.cidr | quote }}
+  {{- end }}
+{{- end }}
+{{- end }}

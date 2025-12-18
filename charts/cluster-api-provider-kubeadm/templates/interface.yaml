@@ -1,0 +1,11 @@
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: ProviderInterface
+metadata:
+  name: cluster-api-provider-kubeadm
+  annotations:
+    helm.sh/resource-policy: keep
+  labels:
+    helm.toolkit.fluxcd.io/name: cluster-api-provider-kubeadm
+    helm.toolkit.fluxcd.io/namespace: {{ .Release.Namespace }}
+spec:
+  description: "Kubeadm bootstrap and control plane providers for Cluster API"

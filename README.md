@@ -8,3 +8,4 @@ This repository contains out-of-tree Helm chart(s) for [k0rdent/kcm](https://doc
 - [Hetzner](/HETZNER.md)
 - [Remote](/REMOTE.md)
 - [Tinkerbell](/TINKERBELL.md)
+- [Hosted ControlPlane Kubeadm](/HCP_KUBEADM.md)

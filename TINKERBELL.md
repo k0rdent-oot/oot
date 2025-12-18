@@ -81,7 +81,7 @@ curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 |
 ```bash
 export KUBECONFIG=/var/lib/k0s/pki/admin.conf
 
-helm install kcm oci://ghcr.io/k0rdent/kcm/charts/kcm --version 1.5.0 -n kcm-system --create-namespace \
+helm install kcm oci://ghcr.io/k0rdent/kcm/charts/kcm --version 1.6.0 -n kcm-system --create-namespace \
   --set regional.telemetry.mode=disabled \
   --set regional.velero.enabled=false
 ```
@@ -132,15 +132,17 @@ spec:
 apiVersion: k0rdent.mirantis.com/v1beta1
 kind: ClusterTemplate
 metadata:
-  name: tinkerbell-standalone-cp-0-2-0
+  name: tinkerbell-standalone-cp-1-0-0
   namespace: kcm-system
+  labels:
+    k0rdent.mirantis.com/component: kcm
   annotations:
     helm.sh/resource-policy: keep
 spec:
   helm:
     chartSpec:
       chart: tinkerbell-standalone-cp
-      version: 0.2.0
+      version: 1.0.0
       interval: 10m0s
       sourceRef:
         kind: HelmRepository
@@ -405,7 +407,7 @@ EOF
 > - Use `/dev/vda` for virtio disks (VMs), `/dev/sda` for SATA/SCSI (bare-metal)
 > - Replace MAC addresses and IP addresses with your actual VM values
 
-### Create Credential
+### Create `Credential`
 
 ```bash
 k0s kubectl apply -f - <<EOF
@@ -444,7 +446,7 @@ metadata:
   name: tinkerbell-demo
   namespace: kcm-system
 spec:
-  template: tinkerbell-standalone-cp-0-2-0
+  template: tinkerbell-standalone-cp-1-0-0
   credential: tinkerbell-cluster-identity-cred
   config:
     controlPlaneNumber: 1
@@ -668,18 +670,18 @@ watch k0s kubectl get cld,tinkerbellcluster,k0scontrolplane,tinkerbellmachine,wo
 Once the cluster deployment is ready, you can extract the kubeconfig to access the child cluster:
 
 ```bash
-k0s kubectl get secret tinkerbell-demo-kubeconfig -n kcm-system -o jsonpath='{.data.value}' | base64 -d > tinkerbell-demo.kubeconfig
+k0s kubectl -n kcm-system get secret tinkerbell-demo-kubeconfig -o jsonpath='{.data.value}' | base64 -d > tinkerbell-demo.kubeconfig
 ```
 
 Test connectivity to the child cluster:
 
 ```bash
-kubectl --kubeconfig=tinkerbell-demo.kubeconfig get nodes
+k0s kubectl --kubeconfig=tinkerbell-demo.kubeconfig get nodes -o wide
 ```
 
 ## References
 
-- [CAPT Repository](https://github.com/tinkerbell/cluster-api-provider-tinkerbell)
+- [CAPT](https://github.com/tinkerbell/cluster-api-provider-tinkerbell)
 - [Tinkerbell Actions](https://github.com/tinkerbell/actions)
 - [HookOS Releases](https://github.com/tinkerbell/hook/releases)
 - [Sushy Tools](https://docs.openstack.org/sushy-tools/)

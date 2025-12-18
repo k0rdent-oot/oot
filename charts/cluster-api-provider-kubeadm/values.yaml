@@ -1,0 +1,23 @@
+# Kubeadm provider version (defaults to appVersion)
+version: "" # @schema description: Provider version override; type: string
+
+# Bootstrap provider configuration
+# Based on ProviderSpec from cluster-api-operator
+bootstrap: # @schema description: Bootstrap provider configuration; type: object
+  manager: {} # @schema description: Manager configuration; type: object; additionalProperties: true
+  deployment: {} # @schema description: Deployment configuration; type: object; additionalProperties: true
+  configSecret: {} # @schema description: Config secret reference; type: object; additionalProperties: true
+  fetchConfig: {} # @schema description: Fetch configuration; type: object; additionalProperties: true
+  additionalManifests: {} # @schema description: Additional manifests; type: object; additionalProperties: true
+  manifestPatches: [] # @schema description: Manifest patches; type: array
+  additionalDeployments: {} # @schema description: Additional deployments; type: object; additionalProperties: true
+
+# Control plane provider configuration
+controlPlane: # @schema description: Control plane provider configuration; type: object
+  manager: {} # @schema description: Manager configuration; type: object; additionalProperties: true
+  deployment: {} # @schema description: Deployment configuration; type: object; additionalProperties: true
+  configSecret: {} # @schema description: Config secret reference; type: object; additionalProperties: true
+  fetchConfig: {} # @schema description: Fetch configuration; type: object; additionalProperties: true
+  additionalManifests: {} # @schema description: Additional manifests; type: object; additionalProperties: true
+  manifestPatches: [] # @schema description: Manifest patches; type: array
+  additionalDeployments: {} # @schema description: Additional deployments; type: object; additionalProperties: true
