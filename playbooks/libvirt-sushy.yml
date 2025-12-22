@@ -121,6 +121,30 @@
           command: sysctl --system
           changed_when: false
 
+    - name: Configure systemd-resolved with fallback DNS
+      block:
+        - name: Create resolved.conf.d directory
+          file:
+            path: /etc/systemd/resolved.conf.d
+            state: directory
+            mode: "0755"
+
+        - name: Configure fallback DNS servers
+          copy:
+            dest: /etc/systemd/resolved.conf.d/dns.conf
+            content: |
+              [Resolve]
+              DNS=8.8.8.8
+              FallbackDNS=1.1.1.1
+            mode: "0644"
+          register: dns_config
+
+        - name: Restart systemd-resolved
+          systemd:
+            name: systemd-resolved
+            state: restarted
+          when: dns_config.changed
+
     - name: Configure libvirt
       block:
         - name: Enable libvirtd service

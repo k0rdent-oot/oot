@@ -333,6 +333,7 @@ spec:
           gateway: 172.17.1.1
           netmask: 255.255.255.0
         name_servers:
+          - 172.17.1.1
           - 8.8.8.8
         lease_time: 4294967294
         uefi: true
@@ -545,6 +546,7 @@ spec:
                   WAIT_SECONDS: 10
                 volumes:
                   - /var/run/docker.sock:/var/run/docker.sock
+    # KubeadmConfig reference: https://doc.crds.dev/github.com/kubernetes-sigs/cluster-api/bootstrap.cluster.x-k8s.io/KubeadmConfig/v1beta2@v1.12.0
     kubeadm:
       preKubeadmCommands:
         - systemctl enable --now containerd
@@ -720,6 +722,7 @@ spec:
                   WAIT_SECONDS: 10
                 volumes:
                   - /var/run/docker.sock:/var/run/docker.sock
+    # KubeadmConfig reference: https://doc.crds.dev/github.com/kubernetes-sigs/cluster-api/bootstrap.cluster.x-k8s.io/KubeadmConfig/v1beta2@v1.12.0
     kubeadm:
       preKubeadmCommands:
         - apt-get update
@@ -727,6 +730,148 @@ spec:
         - ansible-pull -U https://github.com/k0rdent-oot/oot.git playbooks/kubeadm-ubuntu-worker.yml -e KUBERNETES_VERSION=v1.34.3
       joinConfiguration:
         nodeRegistration:
+          kubeletExtraArgs:
+            provider-id: "tinkerbell://kcm-system/{{ ds.meta_data.hostname }}"
+  serviceSpec:
+    services:
+      - template: cilium-cni-1-0-0
+        name: cilium
+        namespace: kube-system
+        values: |
+          cilium:
+            k8sServiceHost: tinkerbell-hcp-demo.kcm-system.172.17.1.200.nip.io
+            k8sServicePort: 443
+EOF
+```
+
+## Create a `Tinkerbell` child cluster (OpenSUSE MicroOS)
+
+> This example uses OpenSUSE MicroOS cloud image with btrfs filesystem.
+
+### Download and convert MicroOS image
+
+Use the provided script to prepare the MicroOS image with Ec2 datasource pre-configured:
+
+```bash
+ARTIFACTS_PATH=$(kubectl get pv $(kubectl get pvc -n kcm-system hook-artifacts -o jsonpath='{.spec.volumeName}') -o jsonpath='{.spec.local.path}')
+
+# Run the preparation script (second argument is the metadata server IP)
+./hack/prepare-microos-image.sh "${ARTIFACTS_PATH}" 172.17.1.1
+
+# Verify image is accessible
+curl -sI http://172.17.1.1:7173/microos.raw.gz | head -3
+```
+
+```bash
+kubectl apply -f - <<EOF
+---
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: ClusterDeployment
+metadata:
+  name: tinkerbell-hcp-demo
+  namespace: kcm-system
+spec:
+  template: tinkerbell-hcp-kubeadm-1-0-0
+  credential: tinkerbell-cluster-identity-cred
+  config:
+    workersNumber: 1
+    kubernetes:
+      version: v1.33.6
+    clusterNetwork:
+      pods:
+        cidrBlocks:
+          - 192.168.0.0/18
+      services:
+        cidrBlocks:
+          - 10.96.0.0/12
+    gateway:
+      gatewayClass:
+        create: true
+        name: envoy
+        controllerName: gateway.envoyproxy.io/gatewayclass-controller
+      create: true
+      name: capi
+      hostname: "*.172.17.1.200.nip.io"
+      addresses:
+        - type: IPAddress
+          value: "172.17.1.200"
+      port: 443
+      protocol: TLS
+      tlsMode: Passthrough
+      envoyProxy:
+        create: true
+        loadBalancerIP: "172.17.1.200"
+    hostedControlPlane:
+      replicas: 1
+      deployment:
+        controllerManager:
+          args:
+            allocate-node-cidrs: "true"
+      konnectivityClient:
+        replicas: 1
+      kubeProxy:
+        enabled: true
+      coredns:
+        enabled: true
+    kubeVipIPPool:
+      enabled: true
+      range: "172.17.1.201-172.17.1.250"
+    worker:
+      bootMode: customboot
+      custombootConfig:
+        preparingActions:
+          - powerAction: "off"
+          - bootDevice:
+              device: "pxe"
+              efiBoot: true
+          - powerAction: "on"
+        postActions:
+          - powerAction: "off"
+          - bootDevice:
+              device: "disk"
+              persistent: true
+              efiBoot: true
+          - powerAction: "on"
+      hardwareAffinity:
+        matchLabels:
+          tinkerbell.org/role: worker
+      templateOverride: |
+        version: "0.1"
+        name: hcp-worker
+        global_timeout: 14400
+        tasks:
+          - name: "hcp-worker"
+            worker: "{{.device_1}}"
+            volumes:
+              - /dev:/dev
+              - /dev/console:/dev/console
+              - /lib/firmware:/lib/firmware:ro
+            actions:
+              - name: "Stream MicroOS Cloud Image"
+                image: quay.io/tinkerbell/actions/image2disk:latest
+                timeout: 6000
+                environment:
+                  DEST_DISK: {{ index .Hardware.Disks 0 }}
+                  IMG_URL: http://172.17.1.1:7173/microos.raw.gz
+                  COMPRESSED: true
+              - name: "Shutdown host"
+                image: ghcr.io/jacobweinstock/waitdaemon:latest
+                timeout: 90
+                pid: host
+                command: ["poweroff"]
+                environment:
+                  IMAGE: alpine
+                  WAIT_SECONDS: 10
+                volumes:
+                  - /var/run/docker.sock:/var/run/docker.sock
+    # KubeadmConfig reference: https://doc.crds.dev/github.com/kubernetes-sigs/cluster-api/bootstrap.cluster.x-k8s.io/KubeadmConfig/v1beta2@v1.12.0
+    kubeadm:
+      sshPwAuth: false
+      preKubeadmCommands:
+        - systemctl start crio
+      joinConfiguration:
+        nodeRegistration:
+          criSocket: unix:///var/run/crio/crio.sock
           kubeletExtraArgs:
             provider-id: "tinkerbell://kcm-system/{{ ds.meta_data.hostname }}"
   serviceSpec:
