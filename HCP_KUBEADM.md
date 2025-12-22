@@ -382,7 +382,9 @@ spec:
 EOF
 ```
 
-## Create a `Tinkerbell` child cluster
+## Create a `Tinkerbell` child cluster (Pre-built Image)
+
+> This example uses a pre-built Ubuntu image with kubeadm and cri-o pre-installed.
 
 ```bash
 kubectl apply -f - <<EOF
@@ -398,7 +400,7 @@ spec:
   config:
     workersNumber: 1
     kubernetes:
-      version: v1.34.2
+      version: v1.34.3
     clusterNetwork:
       pods:
         cidrBlocks:
@@ -438,6 +440,7 @@ spec:
     kubeVipIPPool:
       enabled: true
       range: "172.17.1.201-172.17.1.250"
+    # Image built with mkosi: https://github.com/s3rj1k/playground/tree/main/vms/efi/mkosi/ubuntu/x86_64-k8s
     tinkerbell:
       imageLookup:
         format: "{{.BaseRegistry}}/{{.OSDistro}}-{{.OSVersion}}:{{.KubernetesVersion}}.gz"
@@ -480,7 +483,7 @@ spec:
                 timeout: 3000
                 environment:
                   DEST_DISK: {{ index .Hardware.Disks 0 }}
-                  IMG_URL: ghcr.io/s3rj1k/playground/ubuntu-2404:v1.34.2.gz
+                  IMG_URL: ghcr.io/s3rj1k/playground/ubuntu-2404:v1.34.3.gz
                   COMPRESSED: true
               - name: "Sync and Grow Partition"
                 image: quay.io/tinkerbell/actions/cexec:latest
@@ -515,7 +518,7 @@ spec:
                         groups: [wheel, adm, sudo]
                         sudo: ["ALL=(ALL) NOPASSWD:ALL"]
                         shell: /bin/bash
-                    ssh_pwauth: true
+                    ssh_pwauth: false
                     manage_etc_hosts: localhost
                     warnings:
                       dsid_missing_source: off
@@ -546,6 +549,182 @@ spec:
       preKubeadmCommands:
         - systemctl enable --now containerd
         - sleep 10
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            provider-id: "tinkerbell://kcm-system/{{ ds.meta_data.hostname }}"
+  serviceSpec:
+    services:
+      - template: cilium-cni-1-0-0
+        name: cilium
+        namespace: kube-system
+        values: |
+          cilium:
+            k8sServiceHost: tinkerbell-hcp-demo.kcm-system.172.17.1.200.nip.io
+            k8sServicePort: 443
+EOF
+```
+
+## Create a `Tinkerbell` child cluster (Vanilla Cloud Image)
+
+> This example uses a vanilla Ubuntu cloud image.
+
+```bash
+kubectl apply -f - <<EOF
+---
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: ClusterDeployment
+metadata:
+  name: tinkerbell-hcp-demo
+  namespace: kcm-system
+spec:
+  template: tinkerbell-hcp-kubeadm-1-0-0
+  credential: tinkerbell-cluster-identity-cred
+  config:
+    workersNumber: 1
+    kubernetes:
+      version: v1.34.3
+    clusterNetwork:
+      pods:
+        cidrBlocks:
+          - 192.168.0.0/18
+      services:
+        cidrBlocks:
+          - 10.96.0.0/12
+    gateway:
+      gatewayClass:
+        create: true
+        name: envoy
+        controllerName: gateway.envoyproxy.io/gatewayclass-controller
+      create: true
+      name: capi
+      hostname: "*.172.17.1.200.nip.io"
+      addresses:
+        - type: IPAddress
+          value: "172.17.1.200"
+      port: 443
+      protocol: TLS
+      tlsMode: Passthrough
+      envoyProxy:
+        create: true
+        loadBalancerIP: "172.17.1.200"
+    hostedControlPlane:
+      replicas: 1
+      deployment:
+        controllerManager:
+          args:
+            allocate-node-cidrs: "true"
+      konnectivityClient:
+        replicas: 1
+      kubeProxy:
+        enabled: true
+      coredns:
+        enabled: true
+    kubeVipIPPool:
+      enabled: true
+      range: "172.17.1.201-172.17.1.250"
+    worker:
+      bootMode: customboot
+      custombootConfig:
+        preparingActions:
+          - powerAction: "off"
+          - bootDevice:
+              device: "pxe"
+              efiBoot: true
+          - powerAction: "on"
+        postActions:
+          - powerAction: "off"
+          - bootDevice:
+              device: "disk"
+              persistent: true
+              efiBoot: true
+          - powerAction: "on"
+      hardwareAffinity:
+        matchLabels:
+          tinkerbell.org/role: worker
+      templateOverride: |
+        version: "0.1"
+        name: hcp-worker
+        global_timeout: 9000
+        tasks:
+          - name: "hcp-worker"
+            worker: "{{.device_1}}"
+            volumes:
+              - /dev:/dev
+              - /dev/console:/dev/console
+              - /lib/firmware:/lib/firmware:ro
+            actions:
+              - name: "Stream Ubuntu Cloud Image"
+                image: quay.io/tinkerbell/actions/qemuimg2disk:latest
+                timeout: 3000
+                environment:
+                  DEST_DISK: {{ index .Hardware.Disks 0 }}
+                  IMG_URL: https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
+              - name: "Sync and Grow Partition"
+                image: quay.io/tinkerbell/actions/cexec:latest
+                timeout: 90
+                environment:
+                  BLOCK_DEVICE: {{ index .Hardware.Disks 0 }}1
+                  FS_TYPE: ext4
+                  CHROOT: y
+                  DEFAULT_INTERPRETER: "/bin/sh -c"
+                  CMD_LINE: "sync && growpart {{ index .Hardware.Disks 0 }} 1 || true; resize2fs {{ index .Hardware.Disks 0 }}1 && sync"
+              - name: "Add Tink Cloud-Init Config"
+                image: quay.io/tinkerbell/actions/writefile:latest
+                timeout: 90
+                environment:
+                  DEST_DISK: {{ formatPartition ( index .Hardware.Disks 0 ) 1 }}
+                  FS_TYPE: ext4
+                  DEST_PATH: /etc/cloud/cloud.cfg.d/10_tinkerbell.cfg
+                  UID: 0
+                  GID: 0
+                  MODE: 0600
+                  DIRMODE: 0700
+                  CONTENTS: |
+                    datasource:
+                      Ec2:
+                        metadata_urls: ["http://172.17.1.1:7172"]
+                        strict_id: false
+                    system_info:
+                      default_user:
+                        name: tink
+                        plain_text_passwd: tink
+                        lock_passwd: false
+                        groups: [wheel, adm, sudo]
+                        sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+                        shell: /bin/bash
+                    ssh_pwauth: false
+                    manage_etc_hosts: localhost
+                    warnings:
+                      dsid_missing_source: off
+              - name: "Add Cloud-Init DS-Identity"
+                image: quay.io/tinkerbell/actions/writefile:latest
+                timeout: 90
+                environment:
+                  DEST_DISK: {{ formatPartition ( index .Hardware.Disks 0 ) 1 }}
+                  FS_TYPE: ext4
+                  DEST_PATH: /etc/cloud/ds-identify.cfg
+                  UID: 0
+                  GID: 0
+                  MODE: 0600
+                  DIRMODE: 0700
+                  CONTENTS: |
+                    datasource: Ec2
+              - name: "Shutdown host"
+                image: ghcr.io/jacobweinstock/waitdaemon:latest
+                timeout: 90
+                pid: host
+                command: ["poweroff"]
+                environment:
+                  IMAGE: alpine
+                  WAIT_SECONDS: 10
+                volumes:
+                  - /var/run/docker.sock:/var/run/docker.sock
+    kubeadm:
+      preKubeadmCommands:
+        - apt-get update
+        - apt-get install -y ansible git
+        - ansible-pull -U https://github.com/k0rdent-oot/oot.git playbooks/kubeadm-ubuntu-worker.yml -e KUBERNETES_VERSION=v1.34.3
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:

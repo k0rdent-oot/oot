@@ -1,0 +1,293 @@
+# Copyright 2025 s3rj1k
+# SPDX-License-Identifier: MIT
+
+---
+- name: Kubeadm Worker
+  hosts: localhost
+  connection: local
+  become: true
+  gather_facts: true
+  ignore_errors: false
+  vars:
+    KUBERNETES_VERSION: "v1.34.3"
+    CRIO_VERSION: "v1.34"
+    REGISTRY_MIRROR: ""
+    # Derived variables
+    KUBERNETES_MINOR_VERSION: "{{ KUBERNETES_VERSION | regex_replace('^(v[0-9]+\\.[0-9]+).*', '\\1') }}"
+    KUBERNETES_PACKAGE_VERSION: "{{ KUBERNETES_VERSION | regex_replace('^v', '') }}"
+    # Map ansible_architecture to Debian architecture names
+    DEB_ARCHITECTURE: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+
+  pre_tasks:
+    - name: Check if system is supported
+      block:
+        - name: Check if distribution is Ubuntu
+          fail:
+            msg: "This playbook only supports Ubuntu distributions"
+          when: ansible_distribution not in ["Ubuntu"]
+
+        - name: Get OS version
+          debug:
+            msg: "Running on {{ ansible_distribution }} {{ ansible_distribution_version }} ({{ ansible_architecture }})"
+
+    - name: Wait for system to be ready
+      wait_for:
+        path: /var/lib/cloud/instance/boot-finished
+        timeout: 600
+      when: ansible_service_mgr is defined and lookup('env', 'CLOUD_INIT') != ''
+
+  handlers:
+    - name: Restart crio
+      systemd:
+        name: crio
+        state: restarted
+        daemon_reload: yes
+      when: ansible_service_mgr == 'systemd'
+
+  tasks:
+    - name: Clean up system packages and snap
+      block:
+        - name: Remove all snap packages
+          shell: |
+            snap list | awk '!/^Name|^core|^snapd|^lxd/ {print $1}' | xargs -r snap remove --purge
+            snap list | awk '/^lxd/ {print $1}' | xargs -r snap remove --purge
+            snap list | awk '/^core/ {print $1}' | xargs -r snap remove --purge
+            snap list | awk '/^snapd/ {print $1}' | xargs -r snap remove --purge
+            snap list | awk '!/^Name/ {print $1}' | xargs -r snap remove --purge
+          ignore_errors: true
+          when: ansible_distribution == "Ubuntu"
+
+        - name: Remove system packages
+          apt:
+            name:
+              - lxd
+              - lxd-agent-loader
+              - lxd-installer
+              - plymouth
+              - snapd
+            state: absent
+            purge: yes
+            autoremove: yes
+
+        - name: Remove snap directories
+          file:
+            path: "{{ item }}"
+            state: absent
+          loop:
+            - /root/snap
+            - /run/snapd
+            - /snap
+            - /var/cache/snapd
+            - /var/snap
+
+        - name: Mask unnecessary systemd units
+          systemd:
+            name: "{{ item }}"
+            masked: yes
+          loop:
+            - lxd-installer.socket
+            - plymouth-quit-wait.service
+            - plymouth-quit.service
+            - plymouth-read-write.service
+            - plymouth-start.service
+            - snapd.mounts-pre.target
+            - snapd.seeded.service
+          ignore_errors: true
+
+    - name: Remove system users and groups
+      block:
+        - name: Remove users
+          user:
+            name: "{{ item }}"
+            state: absent
+            remove: yes
+          loop:
+            - lxd
+          ignore_errors: true
+
+        - name: Remove groups
+          group:
+            name: "{{ item }}"
+            state: absent
+          loop:
+            - lxd
+          ignore_errors: true
+
+    - name: Update and upgrade system packages
+      apt:
+        update_cache: yes
+        upgrade: yes
+      register: system_upgraded
+
+    - name: Consolidated package management
+      # apt-cache madison $(apt-cache pkgnames)
+      block:
+        - name: Create directory for apt keyrings
+          ansible.builtin.file:
+            path: /etc/apt/keyrings
+            state: directory
+            mode: "0755"
+
+        # Note: `ansible.builtin.deb822_repository` requires Ansible 2.15+
+
+        - name: Download Kubernetes signing key
+          ansible.builtin.get_url:
+            url: "https://prod-cdn.packages.k8s.io/repositories/isv:/kubernetes:/core:/stable:/{{ KUBERNETES_MINOR_VERSION }}/deb/Release.key"
+            dest: "/etc/apt/keyrings/kubernetes.asc"
+            mode: "0644"
+
+        - name: Create Kubernetes repository file
+          ansible.builtin.copy:
+            dest: "/etc/apt/sources.list.d/kubernetes.sources"
+            content: |
+              X-Repolib-Name: kubernetes
+              Types: deb
+              URIs: https://prod-cdn.packages.k8s.io/repositories/isv:/kubernetes:/core:/stable:/{{ KUBERNETES_MINOR_VERSION }}/deb/
+              Signed-By: /etc/apt/keyrings/kubernetes.asc
+              Suites: /
+              Architectures: {{ DEB_ARCHITECTURE }}
+              Enabled: yes
+            mode: "0644"
+
+        - name: Download CRI-O signing key
+          ansible.builtin.get_url:
+            url: "https://download.opensuse.org/repositories/isv:/cri-o:/stable:/{{ CRIO_VERSION }}/deb/Release.key"
+            dest: "/etc/apt/keyrings/crio.asc"
+            mode: "0644"
+
+        - name: Create CRI-O repository file
+          ansible.builtin.copy:
+            dest: "/etc/apt/sources.list.d/crio.sources"
+            content: |
+              X-Repolib-Name: crio
+              Types: deb
+              URIs: https://download.opensuse.org/repositories/isv:/cri-o:/stable:/{{ CRIO_VERSION }}/deb/
+              Signed-By: /etc/apt/keyrings/crio.asc
+              Suites: /
+              Architectures: {{ DEB_ARCHITECTURE }}
+              Enabled: yes
+            mode: "0644"
+
+        - name: Update apt cache after adding repositories
+          apt:
+            update_cache: yes
+
+        - name: Install CRI-O
+          apt:
+            name:
+              - cri-o
+            state: present
+            update_cache: yes
+          when: system_upgraded is success
+
+        - name: Install Kubernetes packages with exact version
+          apt:
+            name:
+              - "kubeadm={{ KUBERNETES_PACKAGE_VERSION }}-*"
+              - "kubectl={{ KUBERNETES_PACKAGE_VERSION }}-*"
+              - "kubelet={{ KUBERNETES_PACKAGE_VERSION }}-*"
+            state: present
+            allow_downgrade: yes
+          when: system_upgraded is success
+
+        - name: Hold Kubernetes packages at current version
+          ansible.builtin.dpkg_selections:
+            name: "{{ item }}"
+            selection: hold
+          loop:
+            - kubeadm
+            - kubectl
+            - kubelet
+
+    - name: Configure kernel modules
+      block:
+        - name: Ensure required kernel modules are loaded
+          shell: modprobe {{ item }}
+          loop:
+            - overlay
+            - br_netfilter
+          changed_when: false
+
+        - name: Persist required kernel modules
+          copy:
+            dest: /etc/modules-load.d/99-local.conf
+            content: |
+              overlay
+              br_netfilter
+            mode: "0644"
+
+        - name: Configure kernel parameters
+          copy:
+            dest: /etc/sysctl.d/99-local.conf
+            content: |
+              fs.inotify.max_user_instances = 8192
+              fs.inotify.max_user_watches = 524288
+              net.bridge.bridge-nf-call-ip6tables = 1
+              net.bridge.bridge-nf-call-iptables = 1
+              net.ipv4.ip_forward = 1
+              net.ipv6.conf.all.forwarding = 1
+            mode: "0644"
+
+        - name: Apply kernel parameters
+          command: sysctl --system
+          changed_when: false
+
+    - name: Configure CRI-O
+      # https://github.com/cri-o/cri-o/blob/main/README.md#configuration
+      block:
+        - name: Disable short name mode enforcement in CRI-O
+          copy:
+            dest: /etc/crio/crio.conf.d/20-shortnames.conf
+            content: |
+              [crio.image]
+              short_name_mode = "disabled"
+            mode: "0644"
+          notify: Restart crio
+
+        - name: Create CRI-O registries mirror configuration
+          copy:
+            dest: /etc/containers/registries.conf.d/mirror.conf
+            content: |
+              [[registry]]
+              prefix = "docker.io"
+              location = "docker.io"
+              mirror = [{ location = "{{ REGISTRY_MIRROR }}" }]
+
+              [[registry]]
+              prefix = "quay.io"
+              location = "quay.io"
+              mirror = [{ location = "{{ REGISTRY_MIRROR }}" }]
+
+              [[registry]]
+              prefix = "gcr.io"
+              location = "gcr.io"
+              mirror = [{ location = "{{ REGISTRY_MIRROR }}" }]
+
+              [[registry]]
+              prefix = "registry.k8s.io"
+              location = "registry.k8s.io"
+              mirror = [{ location = "{{ REGISTRY_MIRROR }}" }]
+
+              [[registry]]
+              prefix = "k8s.gcr.io"
+              location = "k8s.gcr.io"
+              mirror = [{ location = "{{ REGISTRY_MIRROR }}" }]
+            mode: "0644"
+          when: REGISTRY_MIRROR is defined and REGISTRY_MIRROR | trim | length > 0
+          notify: Restart crio
+
+    - name: Initialize Kubernetes Worker Node
+      block:
+        - name: Enable and start Kubelet service
+          systemd:
+            name: kubelet
+            enabled: yes
+            state: started
+            daemon_reload: yes
+
+        - name: Enable and start CRI-O service
+          systemd:
+            name: crio
+            enabled: yes
+            state: started
+            daemon_reload: yes
