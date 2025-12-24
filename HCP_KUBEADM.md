@@ -94,7 +94,7 @@ spec:
 apiVersion: k0rdent.mirantis.com/v1beta1
 kind: ProviderTemplate
 metadata:
-  name: cluster-api-provider-kubeadm-1-0-0
+  name: cluster-api-provider-kubeadm-1-1-0
   labels:
     k0rdent.mirantis.com/component: kcm
   annotations:
@@ -103,7 +103,7 @@ spec:
   helm:
     chartSpec:
       chart: cluster-api-provider-kubeadm
-      version: 1.0.0
+      version: 1.1.0
       interval: 10m0s
       reconcileStrategy: ChartVersion
       sourceRef:
@@ -134,7 +134,7 @@ spec:
 apiVersion: k0rdent.mirantis.com/v1beta1
 kind: ClusterTemplate
 metadata:
-  name: tinkerbell-hcp-kubeadm-1-0-0
+  name: tinkerbell-hcp-kubeadm-1-2-0
   namespace: kcm-system
   labels:
     k0rdent.mirantis.com/component: kcm
@@ -144,7 +144,7 @@ spec:
   helm:
     chartSpec:
       chart: tinkerbell-hcp-kubeadm
-      version: 1.0.0
+      version: 1.2.0
       interval: 10m0s
       reconcileStrategy: ChartVersion
       sourceRef:
@@ -240,7 +240,12 @@ spec:
   - name: cluster-api-provider-hosted-control-plane
     template: cluster-api-provider-hosted-control-plane-1-0-0
   - name: cluster-api-provider-kubeadm
-    template: cluster-api-provider-kubeadm-1-0-0
+    template: cluster-api-provider-kubeadm-1-1-0
+    config:
+      bootstrap:
+        manager:
+          featureGates:
+            KubeadmBootstrapFormatIgnition: true
   release: kcm-1-6-0
 EOF
 ```
@@ -396,7 +401,7 @@ metadata:
   name: tinkerbell-hcp-demo
   namespace: kcm-system
 spec:
-  template: tinkerbell-hcp-kubeadm-1-0-0
+  template: tinkerbell-hcp-kubeadm-1-2-0
   credential: tinkerbell-cluster-identity-cred
   config:
     workersNumber: 1
@@ -554,7 +559,9 @@ spec:
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:
-            provider-id: "tinkerbell://kcm-system/{{ ds.meta_data.hostname }}"
+            - name: provider-id
+              value: "tinkerbell://kcm-system/{{ ds.meta_data.hostname }}"
+          name: "{{ ds.meta_data.hostname }}"
   serviceSpec:
     services:
       - template: cilium-cni-1-0-0
@@ -580,7 +587,7 @@ metadata:
   name: tinkerbell-hcp-demo
   namespace: kcm-system
 spec:
-  template: tinkerbell-hcp-kubeadm-1-0-0
+  template: tinkerbell-hcp-kubeadm-1-2-0
   credential: tinkerbell-cluster-identity-cred
   config:
     workersNumber: 1
@@ -731,7 +738,9 @@ spec:
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:
-            provider-id: "tinkerbell://kcm-system/{{ ds.meta_data.hostname }}"
+            - name: provider-id
+              value: "tinkerbell://kcm-system/{{ ds.meta_data.hostname }}"
+          name: "{{ ds.meta_data.hostname }}"
   serviceSpec:
     services:
       - template: cilium-cni-1-0-0
@@ -771,7 +780,7 @@ metadata:
   name: tinkerbell-hcp-demo
   namespace: kcm-system
 spec:
-  template: tinkerbell-hcp-kubeadm-1-0-0
+  template: tinkerbell-hcp-kubeadm-1-2-0
   credential: tinkerbell-cluster-identity-cred
   config:
     workersNumber: 1
@@ -866,14 +875,190 @@ spec:
                   - /var/run/docker.sock:/var/run/docker.sock
     # KubeadmConfig reference: https://doc.crds.dev/github.com/kubernetes-sigs/cluster-api/bootstrap.cluster.x-k8s.io/KubeadmConfig/v1beta2@v1.12.0
     kubeadm:
-      sshPwAuth: false
       preKubeadmCommands:
         - systemctl start crio
       joinConfiguration:
         nodeRegistration:
           criSocket: unix:///var/run/crio/crio.sock
           kubeletExtraArgs:
-            provider-id: "tinkerbell://kcm-system/{{ ds.meta_data.hostname }}"
+            - name: provider-id
+              value: "tinkerbell://kcm-system/{{ ds.meta_data.hostname }}"
+          name: "{{ ds.meta_data.hostname }}"
+  serviceSpec:
+    services:
+      - template: cilium-cni-1-0-0
+        name: cilium
+        namespace: kube-system
+        values: |
+          cilium:
+            k8sServiceHost: tinkerbell-hcp-demo.kcm-system.172.17.1.200.nip.io
+            k8sServicePort: 443
+EOF
+```
+
+## Create a `Tinkerbell` child cluster (Flatcar Linux)
+
+> This example uses Flatcar Container Linux with kubernetes binaries from [sysext-bakery](https://github.com/flatcar/sysext-bakery).
+
+```bash
+kubectl apply -f - <<'EOF'
+---
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: ClusterDeployment
+metadata:
+  name: tinkerbell-hcp-demo
+  namespace: kcm-system
+spec:
+  template: tinkerbell-hcp-kubeadm-1-2-0
+  credential: tinkerbell-cluster-identity-cred
+  config:
+    workersNumber: 1
+    kubernetes:
+      version: v1.34.2
+    clusterNetwork:
+      pods:
+        cidrBlocks:
+          - 192.168.0.0/18
+      services:
+        cidrBlocks:
+          - 10.96.0.0/12
+    gateway:
+      gatewayClass:
+        create: true
+        name: envoy
+        controllerName: gateway.envoyproxy.io/gatewayclass-controller
+      create: true
+      name: capi
+      hostname: "*.172.17.1.200.nip.io"
+      addresses:
+        - type: IPAddress
+          value: "172.17.1.200"
+      port: 443
+      protocol: TLS
+      tlsMode: Passthrough
+      envoyProxy:
+        create: true
+        loadBalancerIP: "172.17.1.200"
+    hostedControlPlane:
+      replicas: 1
+      deployment:
+        controllerManager:
+          args:
+            allocate-node-cidrs: "true"
+      konnectivityClient:
+        replicas: 1
+      kubeProxy:
+        enabled: true
+      coredns:
+        enabled: true
+    kubeVipIPPool:
+      enabled: true
+      range: "172.17.1.201-172.17.1.250"
+    worker:
+      bootMode: customboot
+      custombootConfig:
+        preparingActions:
+          - powerAction: "off"
+          - bootDevice:
+              device: "pxe"
+              efiBoot: true
+          - powerAction: "on"
+        postActions:
+          - powerAction: "off"
+          - bootDevice:
+              device: "disk"
+              persistent: true
+              efiBoot: true
+          - powerAction: "on"
+      hardwareAffinity:
+        matchLabels:
+          tinkerbell.org/role: worker
+      templateOverride: |
+        version: "0.1"
+        name: hcp-worker-flatcar
+        global_timeout: 9000
+        tasks:
+          - name: "hcp-worker-flatcar"
+            worker: "{{.device_1}}"
+            volumes:
+              - /dev:/dev
+              - /dev/console:/dev/console
+              - /lib/firmware:/lib/firmware:ro
+            actions:
+              - name: "Stream Flatcar Image"
+                image: quay.io/tinkerbell/actions/image2disk:latest
+                timeout: 3000
+                environment:
+                  DEST_DISK: {{ index .Hardware.Disks 0 }}
+                  IMG_URL: https://stable.release.flatcar-linux.net/amd64-usr/current/flatcar_production_image.bin.bz2
+                  COMPRESSED: true
+              - name: "Configure Ignition URL in GRUB"
+                image: quay.io/tinkerbell/actions/writefile:latest
+                timeout: 90
+                environment:
+                  DEST_DISK: {{ formatPartition ( index .Hardware.Disks 0 ) 6 }}
+                  FS_TYPE: btrfs
+                  DEST_PATH: /grub.cfg
+                  UID: 0
+                  GID: 0
+                  MODE: 0644
+                  DIRMODE: 0755
+                  CONTENTS: |
+                    set linux_append="$linux_append flatcar.autologin=tty1 ignition.config.url=http://172.17.1.1:7172/2009-04-04/user-data"
+              - name: "Shutdown host"
+                image: ghcr.io/jacobweinstock/waitdaemon:latest
+                timeout: 90
+                pid: host
+                command: ["poweroff"]
+                environment:
+                  IMAGE: alpine
+                  WAIT_SECONDS: 10
+                volumes:
+                  - /var/run/docker.sock:/var/run/docker.sock
+    # KubeadmConfig reference: https://doc.crds.dev/github.com/kubernetes-sigs/cluster-api/bootstrap.cluster.x-k8s.io/KubeadmConfig/v1beta2@v1.12.0
+    kubeadm:
+      format: ignition
+      ignition:
+        containerLinuxConfig:
+          additionalConfig: |
+            storage:
+              links:
+                - path: /etc/extensions/kubernetes.raw
+                  hard: false
+                  target: /opt/extensions/kubernetes/kubernetes-v1.34.2-x86-64.raw
+              files:
+                - path: /opt/extensions/kubernetes/kubernetes-v1.34.2-x86-64.raw
+                  contents:
+                    remote:
+                      url: https://github.com/flatcar/sysext-bakery/releases/download/kubernetes-v1.34.2/kubernetes-v1.34.2-x86-64.raw
+            systemd:
+              units:
+                - name: update-engine.service
+                  mask: true
+                - name: locksmithd.service
+                  mask: true
+                - name: kubeadm.service
+                  enabled: true
+                  dropins:
+                    - name: 10-flatcar.conf
+                      contents: |
+                        [Unit]
+                        Requires=containerd.service
+                        After=containerd.service
+                        [Service]
+                        EnvironmentFile=-/run/metadata/flatcar
+      preKubeadmCommands:
+        - systemctl daemon-reload
+        - systemctl enable kubelet
+        - export HOSTNAME=$(hostname)
+        - envsubst < /etc/kubeadm.yml > /etc/kubeadm.yml.tmp
+        - mv /etc/kubeadm.yml.tmp /etc/kubeadm.yml
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            - name: provider-id
+              value: "tinkerbell://kcm-system/${HOSTNAME}"
+          name: "${HOSTNAME}"
   serviceSpec:
     services:
       - template: cilium-cni-1-0-0
