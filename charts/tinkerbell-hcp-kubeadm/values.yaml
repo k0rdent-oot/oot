@@ -82,6 +82,10 @@ worker: # @schema description: Worker machine configuration; type: object
 
 # Kubeadm bootstrap configuration
 kubeadm: # @schema description: Kubeadm bootstrap configuration; type: object
+  format: "" # @schema description: Bootstrap data format (cloud-config or ignition); type: string; enum: ["", "cloud-config", "ignition"]
+  ignition: # @schema description: Ignition-specific configuration (for Flatcar/CoreOS); type: object
+    containerLinuxConfig: # @schema description: Container Linux Config configuration; type: object
+      additionalConfig: "" # @schema description: Additional Ignition config in Container Linux Config format; type: string
   users: [] # @schema description: Users to create on nodes; type: array
   preKubeadmCommands: [] # @schema description: Commands to run before kubeadm; type: array
   postKubeadmCommands: [] # @schema description: Commands to run after kubeadm; type: array

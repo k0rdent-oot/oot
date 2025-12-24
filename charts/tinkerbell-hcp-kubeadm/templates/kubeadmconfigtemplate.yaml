@@ -7,6 +7,19 @@ metadata:
 spec:
   template:
     spec:
+      {{- if .Values.kubeadm.format }}
+      format: {{ .Values.kubeadm.format }}
+      {{- end }}
+      {{- if .Values.kubeadm.ignition }}
+      ignition:
+        {{- if .Values.kubeadm.ignition.containerLinuxConfig }}
+        containerLinuxConfig:
+          {{- if .Values.kubeadm.ignition.containerLinuxConfig.additionalConfig }}
+          additionalConfig: |
+            {{- .Values.kubeadm.ignition.containerLinuxConfig.additionalConfig | nindent 12 }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
       joinConfiguration:
         nodeRegistration:
           {{- if .Values.kubeadm.joinConfiguration.nodeRegistration.kubeletExtraArgs }}
