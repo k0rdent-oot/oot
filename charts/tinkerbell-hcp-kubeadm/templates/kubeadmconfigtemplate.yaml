@@ -1,5 +1,5 @@
 {{- if gt (int .Values.workersNumber) 0 }}
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: KubeadmConfigTemplate
 metadata:
   name: {{ .Release.Name }}-worker
@@ -10,23 +10,20 @@ spec:
       {{- if .Values.kubeadm.format }}
       format: {{ .Values.kubeadm.format }}
       {{- end }}
-      {{- if .Values.kubeadm.ignition }}
+      {{- if and .Values.kubeadm.ignition .Values.kubeadm.ignition.containerLinuxConfig .Values.kubeadm.ignition.containerLinuxConfig.additionalConfig }}
       ignition:
-        {{- if .Values.kubeadm.ignition.containerLinuxConfig }}
         containerLinuxConfig:
-          {{- if .Values.kubeadm.ignition.containerLinuxConfig.additionalConfig }}
           additionalConfig: |
             {{- .Values.kubeadm.ignition.containerLinuxConfig.additionalConfig | nindent 12 }}
-          {{- end }}
-        {{- end }}
       {{- end }}
       joinConfiguration:
         nodeRegistration:
+          {{- if .Values.kubeadm.joinConfiguration.nodeRegistration.name }}
+          name: {{ .Values.kubeadm.joinConfiguration.nodeRegistration.name | quote }}
+          {{- end }}
           {{- if .Values.kubeadm.joinConfiguration.nodeRegistration.kubeletExtraArgs }}
           kubeletExtraArgs:
-            {{- range $key, $value := .Values.kubeadm.joinConfiguration.nodeRegistration.kubeletExtraArgs }}
-            {{ $key }}: {{ $value | quote }}
-            {{- end }}
+            {{- toYaml .Values.kubeadm.joinConfiguration.nodeRegistration.kubeletExtraArgs | nindent 12 }}
           {{- end }}
       {{- if .Values.kubeadm.users }}
       users:

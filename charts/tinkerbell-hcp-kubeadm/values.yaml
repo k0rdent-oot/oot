@@ -91,4 +91,5 @@ kubeadm: # @schema description: Kubeadm bootstrap configuration; type: object
   postKubeadmCommands: [] # @schema description: Commands to run after kubeadm; type: array
   joinConfiguration: # @schema description: Kubeadm join configuration; type: object
     nodeRegistration: # @schema description: Node registration settings; type: object
-      kubeletExtraArgs: {} # @schema description: Extra kubelet arguments; type: object
+      name: "" # @schema description: Node name for registration; type: string
+      kubeletExtraArgs: [] # @schema description: Extra kubelet arguments (list of name/value pairs); type: array
