@@ -1,5 +1,8 @@
 # k0rdent/kcm (out-of-tree), KubeVirt Provider
 
+> [!IMPORTANT]  
+> The latest k0rdent release has native KubeVirt provider support; starting from k0rdent version 1.7.0, these charts are considered to be unsupported.
+
 ## Install `k0rdent/kcm` into Kubernetes cluster
 
 > Note: for the `KinD` based cluster use [setup script](/hack/kind/create.sh), to use image registry proxy `export REGISTRY_PROXY=image.proxy.net`
