@@ -8,6 +8,10 @@ rules:
   resources:
   - hetznerclusters
   - hetznerclustertemplates
+  - hcloudmachines
+  - hcloudmachinetemplates
+  - hcloudremediations
+  - hcloudremediationtemplates
   - hetznerbaremetalhosts
   - hetznerbaremetalmachines
   - hetznerbaremetalmachinetemplates
